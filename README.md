@@ -1,15 +1,17 @@
-# Build
+## Build
 
-`cmake --preset=default`
-`cmake --build build --config Release`
+```
+cmake --preset=default
+cmake --build build --config Release
+```
 
-# Run
+## Run
 
-- note: filepath to the ROM should be provided to stdin.
+note: filepath to the ROM should be provided to stdin.
 
 `./build/Release/GameBoy.exe`
 
-# Dependencies
+## Dependencies
 
 - SDL2 for application layer stuff (Graphics, Audio, Handling Inputs).
 - Catch2 for testing.
