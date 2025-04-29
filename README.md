@@ -13,5 +13,4 @@ note: filepath to the ROM should be provided to stdin.
 
 ## Dependencies
 
-- SDL2 for application layer stuff (Graphics, Audio, Handling Inputs).
-- Catch2 for testing.
+- Assumes you have vcpkg installed at "C:/vcpkg".
