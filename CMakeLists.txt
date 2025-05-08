@@ -12,6 +12,6 @@ add_executable(GameBoy main.cpp)
 target_link_libraries(GameBoy
         PRIVATE
         hardware
-        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+        $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main> #targets for SDL2, to be moved to files that actually use it later
         $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     )
