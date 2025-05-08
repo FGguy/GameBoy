@@ -51,14 +51,14 @@ int main(int argc, char *argv[])
 
     switch (LoadFileToBuffer(cartridge_filepath, cart_rom))
     {
-    case ERR_OPEN:
+    case ERR_OPEN: {
         std::cerr << "Error: Failed to open the cartridge rom file." << cartridge_filepath << std::endl;
         return 1;
-        break;
-    case ERR_OVERFLOW:
+        } break;
+    case ERR_OVERFLOW: {
         std::cerr << "Error: cartridge rom file is too big for memory." << std::endl;
         return 1;
-        break;
+        } break;
     default:
         break;
     }
@@ -67,14 +67,14 @@ int main(int argc, char *argv[])
     std::vector<std::uint8_t> boot_rom(256,0);
     switch (LoadFileToBuffer("C:/Users/Yan/Desktop/gameboy/dmg_boot.bin", boot_rom)) //TODO: Change to use a relative path
     {
-    case ERR_OPEN:
+    case ERR_OPEN: {
         std::cerr << "Error: Could not load the boot rom, make sure it is in the same directory as the executable." << std::endl;
         return 1;
-        break;
-    case ERR_OVERFLOW:
+        } break;
+    case ERR_OVERFLOW: {
         std::cerr << "Error: boot rom file is too big for memory." << std::endl;
         return 1;
-        break;
+        } break;
     default:
         break;
     }
