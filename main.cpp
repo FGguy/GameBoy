@@ -1,5 +1,4 @@
-#include <SDL.h>
-#include <temp.h>
+#include <GBPlatform.h>
 
 #include <iostream>
 #include <fstream>
@@ -81,7 +80,7 @@ int main(int argc, char *argv[])
     }
 
     //run program
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    return 0;
+    GBPlatform platform{boot_rom, cart_rom};
+    return platform.BootAndExecute();
 }
 
