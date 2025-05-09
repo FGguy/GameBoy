@@ -1,4 +1,7 @@
 #pragma once
+#include <GBBus.h>
+#include <SDL.h>
+
 #include <vector>
 
 class GBPlatform {
@@ -17,7 +20,7 @@ class GBPlatform {
         std::uint8_t b_start;
 
         //CPU
-        //BUS
+        GBBus gbBus;
         //PPU
 
         SDL_Window* gbWindow;

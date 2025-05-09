@@ -1,5 +1,4 @@
 #include <GBPlatform.h>
-#include <SDL.h>
 
 /*
 TODO:
@@ -9,7 +8,8 @@ TODO:
 
 GBPlatform::GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM):
     bootROM{bootROM},
-    cartridgeROM{cartridgeROM}
+    cartridgeROM{cartridgeROM},
+    gbBus{bootROM, cartridgeROM}
 {
 }
 
