@@ -1,14 +1,27 @@
 #include <catch2/catch_test_macros.hpp>
+#include <GBBus.h>
 
-#include <cstdint>
+TEST_CASE("Boot ROM is mapped and unmapped correctly", "[bus]"){
+    //Roms are initialized with 0, and 1 to identify which rom is being read from.
+    std::vector<std::uint8_t> cart_rom(32 * 1024 , 0);
+    std::vector<std::uint8_t> boot_rom(256 , 1);
+    GBBus bus{boot_rom, cart_rom};
 
-uint32_t factorial( uint32_t number ) {
-    return number <= 1 ? number : factorial(number-1) * number;
-}
+    WHEN("The boot is activated."){
+        bus.write(0x00, 0xFF50); //
+        THEN("Reads between 0x0000-0x00FF are done to the boot rom."){
+            REQUIRE(bus.read(0x004F) == 1);
+            REQUIRE(bus.read(0x00FF) == 1);
+            REQUIRE(bus.read(0x0100) == 0);
+            REQUIRE(bus.read(0x01FF) == 0);
+        }
+    }
 
-TEST_CASE( "Factorials are computed", "[factorial]" ) {
-    REQUIRE( factorial( 1) == 1 );
-    REQUIRE( factorial( 2) == 2 );
-    REQUIRE( factorial( 3) == 6 );
-    REQUIRE( factorial(10) == 3'628'800 );
+    WHEN("The boot is deactivated."){
+        bus.write(0x01, 0xFF50); //
+        THEN("Reads between 0x0000-0x00FF are done to the cartridge rom."){
+            REQUIRE(bus.read(0x004F) == 0);
+            REQUIRE(bus.read(0x00FF) == 0);
+        }
+    }
 }

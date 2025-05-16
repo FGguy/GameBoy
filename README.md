@@ -7,11 +7,15 @@ cmake --preset=default
 cmake --build build --config Release
 ```
 
-## Run
+## Run Emulator
 
-note: filepath to the ROM should be provided to stdin.
+note: filepath to the cartridge ROM should be provided to stdin.
 
 `./build/Release/GameBoy.exe`
+
+## Run Tests
+
+`./build/tests/Release/tests.exe`
 
 ## Dependencies
 

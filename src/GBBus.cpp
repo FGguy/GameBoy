@@ -3,12 +3,12 @@
 GBBus::GBBus(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM):
     bootROM{bootROM},
     cartridgeROM{cartridgeROM},
-    vRam(8192, 0),
-    extRam(8192, 0),
-    wRam(8192, 0),
-    echoRam(7680, 0),
-    OAM(160, 0),
-    hRam(127, 0),
+    vRam(8192),
+    extRam(8192),
+    wRam(8192),
+    echoRam(7680),
+    OAM(160),
+    hRam(127),
     bootLockRegister{0},
     ieRegister{0}
 {
