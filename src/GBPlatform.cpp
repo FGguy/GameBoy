@@ -32,6 +32,7 @@ int GBPlatform::BootAndExecute(){
         return 1;
     }
 
+
     //cleanup
     SDL_DestroyRenderer(gbRenderer);
     SDL_DestroyWindow(gbWindow);

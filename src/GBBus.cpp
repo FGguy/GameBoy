@@ -8,6 +8,7 @@ GBBus::GBBus(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cart
     wRam(8192, 0),
     echoRam(7680, 0),
     OAM(160, 0),
+    hRam(127, 0),
     bootLockRegister{0},
     ieRegister{0}
 {
@@ -24,16 +25,18 @@ std::uint8_t GBBus::read(std::uint16_t address){
         }else{
             return cartridgeROM[address];
         }
-    } else if(0x8000 <= address <= 0x9FFF){
+    } else if(0x8000 <= address && address <= 0x9FFF){
         return vRam[address % 0x8000];
-    } else if(0xA000 <= address <= 0xBFFF){
+    } else if(0xA000 <= address && address <= 0xBFFF){
         return extRam[address % 0xA000];
-    } else if(0xC000 <= address <= 0xDFFF){
+    } else if(0xC000 <= address && address <= 0xDFFF){
         return wRam[address % 0xC000];
-    } else if(0xE000 <= address <= 0xFDFF){
+    } else if(0xE000 <= address && address <= 0xFDFF){
         return echoRam[address % 0xE000];
-    } else if(0xFE00 <= address <= 0xFE9F){
+    } else if(0xFE00 <= address && address <= 0xFE9F){
         return OAM[address % 0xFE00];
+    } else if (0xFF80 <= address && address <= 0xFFFE){ //hram access
+        return hRam[address % 0xFF80];
     } else if (address == 0xFF50){
         return bootLockRegister;
     } else if (address == 0xFFFF){
@@ -54,18 +57,20 @@ void GBBus::write(std::uint8_t input, std::uint16_t address){
         }else{
             cartridgeROM[address] = input;
         }
-    } else if(0x8000 <= address <= 0x9FFF){
+    } else if(0x8000 <= address && address <= 0x9FFF){
         vRam[address % 0x8000] = input;
-    } else if(0xA000 <= address <= 0xBFFF){
+    } else if(0xA000 <= address && address <= 0xBFFF){
         extRam[address % 0xA000] = input;
-    } else if(0xC000 <= address <= 0xDFFF){
+    } else if(0xC000 <= address && address <= 0xDFFF){
         wRam[address % 0xC000] = input;
         if(address <= 0xDDFF) echoRam[address % 0xC000] = input; //emulate mirroring between wRam and echoRam
-    } else if(0xE000 <= address <= 0xFDFF){
+    } else if(0xE000 <= address && address <= 0xFDFF){
         echoRam[address % 0xE000] = input;
         wRam[address % 0xE000] = input; //emulate mirroring between wRam and echoRam
-    } else if(0xFE00 <= address <= 0xFE9F){
+    } else if(0xFE00 <= address && address <= 0xFE9F){
         OAM[address % 0xFE00] = input;
+    } else if (0xFF80 <= address && address <= 0xFFFE){ //hram access
+        hRam[address % 0xFF80] = input;
     } else if (address == 0xFF50){
         bootLockRegister = input;
     } else if (address == 0xFFFF){

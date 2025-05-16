@@ -1,5 +1,7 @@
 ## Build
 
+This first generates build files, then builds using those files.
+
 ```
 cmake --preset=default
 cmake --build build --config Release

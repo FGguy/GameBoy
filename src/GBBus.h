@@ -1,6 +1,12 @@
 #pragma once
 #include <vector>
 
+/*
+TODO:
+    - Reads to IO registers
+    - Timers and other special register between FF00 - FF7F
+*/
+
 class GBBus{
     private:
         std::vector<std::uint8_t> bootROM; //0000 - 00FF
@@ -11,6 +17,7 @@ class GBBus{
         std::vector<std::uint8_t> wRam; //C000 - DFFF
         std::vector<std::uint8_t> echoRam; //E000 - FDFF
         std::vector<std::uint8_t> OAM; //FE00 - FE9F
+        std::vector<std::uint8_t> hRam; //FE00 - FE9F
 
         std::uint8_t bootLockRegister; //FF50
         std::uint8_t ieRegister; //FFFF
