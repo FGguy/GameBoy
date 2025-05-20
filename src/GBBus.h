@@ -18,8 +18,8 @@ class GBBus{
         std::vector<std::uint8_t> echoRam; //E000 - FDFF
         std::vector<std::uint8_t> OAM; //FE00 - FE9F
         std::vector<std::uint8_t> hRam; //FE00 - FE9F
+        std::vector<std::uint8_t> IORegisters; //FF00 - FF7F
 
-        std::uint8_t bootLockRegister; //FF50
         std::uint8_t ieRegister; //FFFF
 
     public:

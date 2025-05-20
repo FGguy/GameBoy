@@ -32,6 +32,8 @@ int GBPlatform::BootAndExecute(){
         return 1;
     }
 
+    gbBus.write(0x00, 0xFF50); //enabled boot rom
+
 
     //cleanup
     SDL_DestroyRenderer(gbRenderer);
