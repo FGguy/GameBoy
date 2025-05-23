@@ -38,6 +38,9 @@ void GBCpu::setRegisterPair(std::uint16_t value, RegisterPairs register_pair){
 
 void GBCpu::initInstructionTables(){
 
+//all entries in both tables need to be initialized
+// B C D E H L [HL] A
+
 //LD r, r' Load Instructions
 #pragma region LD_R_R
 LD_REG_REG(0x40, B, B, 1, 1);
@@ -188,8 +191,105 @@ instruction_table[0x3E] = {
 #pragma endregion
 
 // Operation between A and R
+// missing imm8 and indirect HL
 #pragma region Block_2
+    // 0x80 - 0xBF
+ADD_A_R(0x80, B, 1, 1);
+ADD_A_R(0x81, C, 1, 1);
+ADD_A_R(0x82, D, 1, 1);
+ADD_A_R(0x83, E, 1, 1);
+ADD_A_R(0x84, H, 1, 1);
+ADD_A_R(0x85, L, 1, 1);
+instruction_table[0x86] = { 
+    1, 
+    2, 
+    [&](){ 
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        if ((0xFF - g_registers[REG_A]) < num) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_A] & 0x0F) + (num & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_A] += num; 
+        if (g_registers[REG_A] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    } 
+};
+ADD_A_R(0x87, A, 1, 1);
 
+ADC_A_R(0x88, B, 1, 1);
+ADC_A_R(0x89, C, 1, 1);
+ADC_A_R(0x8A, D, 1, 1);
+ADC_A_R(0x8B, E, 1, 1);
+ADC_A_R(0x8C, H, 1, 1);
+ADC_A_R(0x8D, L, 1, 1);
+instruction_table[0x8E] = { 
+    1, 
+    2, 
+    [&](){ 
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
+        if ((0xFF - g_registers[REG_A]) < (num + carry)) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_A] & 0x0F) + (num & 0x0F) + carry ) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_A] += num + carry; 
+        if (g_registers[REG_A] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    } 
+};
+ADC_A_R(0x8F, A, 1, 1);
+
+SUB_A_R(0x90, B, 1, 1);
+SUB_A_R(0x91, C, 1, 1);
+SUB_A_R(0x92, D, 1, 1);
+SUB_A_R(0x93, E, 1, 1);
+SUB_A_R(0x94, H, 1, 1);
+SUB_A_R(0x95, L, 1, 1);
+instruction_table[0x96] = {
+    1,
+    2,
+    [&](){
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        if (g_registers[REG_A] < g_registers[num]) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        if ((g_registers[REG_A] & 0x0F) < (g_registers[num] & 0x0F)) {
+            g_registers[REG_F] |= 0b00100000;
+        } else {
+            g_registers[REG_F] &= 0b11011111;
+        }
+        g_registers[REG_A] -= g_registers[num];
+        if (g_registers[REG_A] == 0){
+            g_registers[REG_F] |= 0b10000000;
+        } else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] |= 0b01000000;
+    }
+};
+SUB_A_R(0x97, A, 1, 1);
 
 
 #pragma endregion
