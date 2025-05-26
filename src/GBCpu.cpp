@@ -191,7 +191,7 @@ instruction_table[0x3E] = {
 #pragma endregion
 
 // Operation between A and R
-// missing imm8 and indirect HL
+// missing imm8
 #pragma region Block_2
     // 0x80 - 0xBF
 ADD_A_R(0x80, B, 1, 1);
@@ -270,17 +270,17 @@ instruction_table[0x96] = {
     2,
     [&](){
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
-        if (g_registers[REG_A] < g_registers[num]) {
+        if (g_registers[REG_A] < num) {
             g_registers[REG_F] |= 0b00010000;
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
-        if ((g_registers[REG_A] & 0x0F) < (g_registers[num] & 0x0F)) {
+        if ((g_registers[REG_A] & 0x0F) < (num & 0x0F)) {
             g_registers[REG_F] |= 0b00100000;
         } else {
             g_registers[REG_F] &= 0b11011111;
         }
-        g_registers[REG_A] -= g_registers[num];
+        g_registers[REG_A] -= num;
         if (g_registers[REG_A] == 0){
             g_registers[REG_F] |= 0b10000000;
         } else {
@@ -291,6 +291,141 @@ instruction_table[0x96] = {
 };
 SUB_A_R(0x97, A, 1, 1);
 
+SBC_A_R(0x98, B, 1, 1);
+SBC_A_R(0x99, C, 1, 1);
+SBC_A_R(0x9A, D, 1, 1);
+SBC_A_R(0x9B, E, 1, 1);
+SBC_A_R(0x9C, H, 1, 1);
+SBC_A_R(0x9D, L, 1, 1);
+instruction_table[0x9E] = {
+    1,
+    2,
+    [&](){
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
+        if (g_registers[REG_A] < (num + carry)) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        if ((g_registers[REG_A] & 0x0F) < (num & 0x0F + carry)) {
+            g_registers[REG_F] |= 0b00100000;
+        } else {
+            g_registers[REG_F] &= 0b11011111;
+        }
+        g_registers[REG_A] -= (num + carry);
+        if (g_registers[REG_A] == 0){
+            g_registers[REG_F] |= 0b10000000;
+        } else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] |= 0b01000000;
+    }
+};
+SBC_A_R(0x9F, A, 1, 1);
 
+AND_A_R(0xA0, B, 1, 1);
+AND_A_R(0xA1, C, 1, 1);
+AND_A_R(0xA2, D, 1, 1);
+AND_A_R(0xA3, E, 1, 1);
+AND_A_R(0xA4, H, 1, 1);
+AND_A_R(0xA5, L, 1, 1);
+instruction_table[0xA6] = {
+    1,
+    2,
+    [&](){
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        g_registers[REG_A] &= num;
+        if (g_registers[REG_A] == 0){
+            g_registers[REG_F] |= 0b10000000;
+        } else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10111111;
+        g_registers[REG_F] |= 0b00100000;
+        g_registers[REG_F] &= 0b11101111;
+    }
+};
+AND_A_R(0xA7, A, 1, 1);
+
+XOR_A_R(0xA8, B, 1, 1);
+XOR_A_R(0xA9, C, 1, 1);
+XOR_A_R(0xAA, D, 1, 1);
+XOR_A_R(0xAB, E, 1, 1);
+XOR_A_R(0xAC, H, 1, 1);
+XOR_A_R(0xAD, L, 1, 1);
+instruction_table[0xAE] = { 
+    1, 
+    2, 
+    [&](){ 
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        g_registers[REG_A] ^= num; 
+        if (g_registers[REG_A] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+        g_registers[REG_F] &= 0b11011111; 
+        g_registers[REG_F] &= 0b11101111; 
+    } 
+};
+XOR_A_R(0xAF, A, 1, 1);
+
+OR_A_R(0xB0, B, 1, 1);
+OR_A_R(0xB1, C, 1, 1);
+OR_A_R(0xB2, D, 1, 1);
+OR_A_R(0xB3, E, 1, 1);
+OR_A_R(0xB4, H, 1, 1);
+OR_A_R(0xB5, L, 1, 1);
+instruction_table[0xB6] = { 
+    1, 
+    2, 
+    [&](){ 
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        g_registers[REG_A] |= num; 
+        if (g_registers[REG_A] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+        g_registers[REG_F] &= 0b11011111; 
+        g_registers[REG_F] &= 0b11101111; 
+    } 
+};
+OR_A_R(0xB7, A, 1, 1);
+
+CP_A_R(0xB8, B, 1, 1);
+CP_A_R(0xB9, C, 1, 1);
+CP_A_R(0xBA, D, 1, 1);
+CP_A_R(0xBB, E, 1, 1);
+CP_A_R(0xBC, H, 1, 1);
+CP_A_R(0xBD, L, 1, 1);
+instruction_table[0xBE] = { 
+    1, 
+    2, 
+    [&](){ 
+        std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
+        if (g_registers[REG_A] < num) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if ((g_registers[REG_A] & 0x0F) < (num & 0x0F)) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        if (g_registers[REG_A] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] |= 0b01000000; 
+    } 
+};
+CP_A_R(0xBF, A, 1, 1);
 #pragma endregion
+
 }
