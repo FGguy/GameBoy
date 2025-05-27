@@ -757,5 +757,164 @@ instruction_table[0xDA] = {
     }
 };
 
+instruction_table[0xCD] = {
+    3,
+    6,
+    [&](){
+        std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
+        addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
+        //push current pc val to stack
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = addr;
+    }   
+};
+
+//jump imm16 cc
+//C4, CC, D4, DC
+instruction_table[0xC4] = {
+    3,
+    6,
+    [&](){
+        if (!(g_registers[REG_F] & 0b10000000)){
+            std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
+            addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
+            //push current pc val to stack
+            gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+            gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+            pc_r = addr;
+        }
+    }   
+};
+
+instruction_table[0xCC] = {
+    3,
+    6,
+    [&](){
+        if (g_registers[REG_F] & 0b10000000){
+            std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
+            addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
+            //push current pc val to stack
+            gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+            gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+            pc_r = addr;
+        }
+    }   
+};
+
+instruction_table[0xD4] = {
+    3,
+    6,
+    [&](){
+        if (!(g_registers[REG_F] & 0b00010000)){
+            std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
+            addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
+            //push current pc val to stack
+            gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+            gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+            pc_r = addr;
+        }
+    }   
+};
+
+instruction_table[0xD4] = {
+    3,
+    6,
+    [&](){
+        if (g_registers[REG_F] & 0b00010000){
+            std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
+            addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
+            //push current pc val to stack
+            gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+            gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+            pc_r = addr;
+        }
+    }   
+};
+
+//RST
+//C7, CF, D7, DF, E7, EF, F7, FF
+instruction_table[0xC7] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0000;
+    }   
+};
+
+instruction_table[0xCF] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0008;
+    }   
+};
+
+instruction_table[0xD7] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0010;
+    }   
+};
+
+instruction_table[0xDF] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0018;
+    }   
+};
+
+instruction_table[0xE7] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0020;
+    }   
+};
+
+instruction_table[0xEF] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0028;
+    }   
+};
+
+instruction_table[0xF7] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0030;
+    }   
+};
+
+instruction_table[0xFF] = {
+    1,
+    4,
+    [&](){
+        gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+        gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
+        pc_r = 0x0038;
+    }   
+};
+
+
+
 #pragma endregion
 }
