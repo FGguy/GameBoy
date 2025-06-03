@@ -619,9 +619,111 @@ instruction_table[0x07] = {
     1,
     1,
     [&](){
-        subFromRegister(REG_A, 1);
+        std::uint8_t carry = g_registers[REG_A] >> 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        g_registers[REG_A] = (g_registers[REG_A] << 1) | carry;
     }
 };
+
+instruction_table[0x0F] = {
+    1,
+    1,
+    [&](){
+        std::uint8_t carry = g_registers[REG_A] << 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        g_registers[REG_A] = (g_registers[REG_A] << 1) | carry;
+    }
+};
+
+instruction_table[0x17] = {
+    1,
+    1,
+    [&](){
+        std::uint8_t carry = g_registers[REG_A] >> 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        g_registers[REG_A] = (g_registers[REG_A] << 1);
+    }
+};
+
+instruction_table[0x1F] = {
+    1,
+    1,
+    [&](){
+        std::uint8_t carry = g_registers[REG_A] << 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        g_registers[REG_A] = (g_registers[REG_A] << 1);
+    }
+};
+
+//daa
+instruction_table[0x27] = {
+    1,
+    1,
+    [&](){
+        if(g_registers[REG_F] & 0x40){ //sub
+            if(g_registers[REG_F] & 0x10){ //carry
+                g_registers[REG_A] -= 0x60;
+            }
+            if(g_registers[REG_F] & 0x20){ //half carry
+                g_registers[REG_A] -= 0x06;
+            }
+        }else {
+            if((g_registers[REG_F] & 0x10) || (g_registers[REG_A] & 0x0F) > 0x09){ //carry
+                g_registers[REG_A] += 0x60;
+            }
+            if((g_registers[REG_F] & 0x20) || (g_registers[REG_A] & 0x0F) > 0x09){ //half carry
+                g_registers[REG_A] += 0x06;
+            }
+        }
+    }
+};
+
+//cpl
+instruction_table[0x2F] = {
+    1,
+    1,
+    [&](){
+        g_registers[REG_A] = ~g_registers[REG_A];
+        g_registers[REG_F] |= 0b01100000;
+    }
+};
+
+//scf
+instruction_table[0x37] = {
+    1,
+    1,
+    [&](){
+        g_registers[REG_F] |= 0b00010000;
+        g_registers[REG_F] &= 0b10010000;
+    }
+};
+
+//ccf
+instruction_table[0x3F] = {
+    1,
+    1,
+    [&](){
+        g_registers[REG_F] ^= 0b00010000;
+        g_registers[REG_F] &= 0b10010000;
+    }
+};
+
 #pragma endregion
 
 //LD r, r' Load Instructions
