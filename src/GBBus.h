@@ -25,5 +25,5 @@ class GBBus{
     public:
         GBBus(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
         std::uint8_t read(std::uint16_t address);
-        void write(std::uint8_t input, std::uint16_t address);
+        void write(std::uint8_t value, std::uint16_t address);
 };

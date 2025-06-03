@@ -26,6 +26,46 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     return instruction.cycles;
 }
 
+void GBCpu::addToRegister(Registers reg, std::uint8_t value){
+        if ((0xFF - g_registers[reg]) < value) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[reg] & 0x0F) + (value & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[reg] += value;
+        if (g_registers[reg] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+}
+
+void GBCpu::subFromRegister(Registers reg, std::uint8_t value){
+    if (g_registers[reg] < value) {
+        g_registers[REG_F] |= 0b00010000;
+    } else {
+        g_registers[REG_F] &= 0b11101111;
+    }
+    if ((g_registers[reg] & 0x0F) < (value & 0x0F)) {
+        g_registers[REG_F] |= 0b00100000;
+    } else {
+        g_registers[REG_F] &= 0b11011111;
+    }
+    g_registers[reg] -= value;
+    if (g_registers[reg] == 0){
+        g_registers[REG_F] |= 0b10000000;
+    } else {
+        g_registers[REG_F] &= 0b01111111;
+    }
+    g_registers[REG_F] |= 0b01000000;
+}
+
 std::uint16_t GBCpu::getRegisterPair(RegisterPairs register_pair){
     std::uint16_t value = g_registers[register_pair*2];
     return (value << 8) | g_registers[register_pair*2 + 1];
@@ -37,9 +77,552 @@ void GBCpu::setRegisterPair(std::uint16_t value, RegisterPairs register_pair){
 }
 
 void GBCpu::initInstructionTables(){
-
-//all entries in both tables need to be initialized
+//need to refactor instructions to return cycles and length
+//potential bug, incrementing the pc after setting its value;
+//all entries in both tables need to be initialized;
+//why are flags set on increments and decrements on individual registers but not register pairs
 // B C D E H L [HL] A
+
+#pragma region Block_1
+
+instruction_table[0x00] = {
+    1,
+    1,
+    [&](){
+
+    }
+};
+
+instruction_table[0x01] = {
+    3,
+    3,
+    [&](){
+        std::uint16_t val = gbBus->read(pc_r + 1);
+        val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
+        setRegisterPair(val, REG_BC);
+    }
+};
+
+instruction_table[0x11] = {
+    3,
+    3,
+    [&](){
+        std::uint16_t val = gbBus->read(pc_r + 1);
+        val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
+        setRegisterPair(val, REG_DE);
+    }
+};
+
+instruction_table[0x21] = {
+    3,
+    3,
+    [&](){
+        std::uint16_t val = gbBus->read(pc_r + 1);
+        val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
+        setRegisterPair(val, REG_HL);
+    }
+};
+
+instruction_table[0x31] = {
+    3,
+    3,
+    [&](){
+        std::uint16_t val = gbBus->read(pc_r + 1);
+        val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
+        setRegisterPair(val, REG_AF);
+    }
+};
+
+instruction_table[0x02] = {
+    1,
+    2,
+    [&](){
+        gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
+    }
+};
+
+instruction_table[0x12] = {
+    1,
+    2,
+    [&](){
+        gbBus->write(g_registers[REG_A], getRegisterPair(REG_DE));
+    }
+};
+
+instruction_table[0x22] = {
+    1,
+    2,
+    [&](){
+        gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
+        setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+    }
+};
+
+instruction_table[0x32] = {
+    1,
+    2,
+    [&](){
+        gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
+        setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+    }
+};
+
+instruction_table[0x0A] = {
+    1,
+    2,
+    [&](){
+        g_registers[REG_A] = gbBus->read(getRegisterPair(REG_BC));
+    }
+};
+
+instruction_table[0x1A] = {
+    1,
+    2,
+    [&](){
+        g_registers[REG_A] = gbBus->read(getRegisterPair(REG_DE));
+    }
+};
+
+instruction_table[0x2A] = {
+    1,
+    2,
+    [&](){
+        g_registers[REG_A] = gbBus->read(getRegisterPair(REG_HL));
+        setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+    }
+};
+
+instruction_table[0x3A] = {
+    1,
+    2,
+    [&](){
+        g_registers[REG_A] = gbBus->read(getRegisterPair(REG_HL));
+        setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+    }
+};
+
+instruction_table[0x08] = {
+    3,
+    5,
+    [&](){
+        std::uint16_t addr = gbBus->read(pc_r + 1);
+        addr |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
+        gbBus->write(static_cast<std::uint8_t>(sp_r >> 8), addr);
+    }
+};
+
+instruction_table[0x03] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_BC) + 1, REG_BC);
+    }
+};
+
+instruction_table[0x13] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_DE) + 1, REG_DE);
+    }
+};
+
+instruction_table[0x23] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+    }
+};
+
+instruction_table[0x33] = {
+    1,
+    2,
+    [&](){
+        sp_r += 1;
+    }
+};
+
+instruction_table[0x0B] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_BC) - 1, REG_BC);
+    }
+};
+
+instruction_table[0x1B] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_DE) - 1, REG_DE);
+    }
+};
+
+instruction_table[0x2B] = {
+    1,
+    2,
+    [&](){
+        setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+    }
+};
+
+instruction_table[0x3B] = {
+    1,
+    2,
+    [&](){
+        sp_r -= 1;
+    }
+};
+
+instruction_table[0x09] = {
+    1,
+    2,
+    [&](){
+        //lsb
+        if ((0xFF - g_registers[REG_L]) < g_registers[REG_C]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_C] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_L] += g_registers[REG_C];
+        if (g_registers[REG_L] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+
+        //msb
+        if ((0xFF - g_registers[REG_H]) < g_registers[REG_B]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_B] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_H] += g_registers[REG_B];
+        if (g_registers[REG_H] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    }
+};
+
+instruction_table[0x19] = {
+    1,
+    2,
+    [&](){
+        if ((0xFF - g_registers[REG_L]) < g_registers[REG_E]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_E] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_L] += g_registers[REG_E];
+        if (g_registers[REG_L] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+
+        //msb
+        if ((0xFF - g_registers[REG_H]) < g_registers[REG_D]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_D] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_H] += g_registers[REG_D];
+        if (g_registers[REG_H] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    }
+};
+
+instruction_table[0x29] = {
+    1,
+    2,
+    [&](){
+        if ((0xFF - g_registers[REG_L]) < g_registers[REG_L]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_L] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_L] += g_registers[REG_L];
+        if (g_registers[REG_L] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+
+        //msb
+        if ((0xFF - g_registers[REG_H]) < g_registers[REG_H]) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_H] & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_H] += g_registers[REG_H];
+        if (g_registers[REG_H] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    }
+};
+
+instruction_table[0x39] = {
+    1,
+    2,
+    [&](){
+        std::uint8_t lsb = static_cast<std::uint8_t>(sp_r & 0x00FF);
+        std::uint8_t msb = static_cast<std::uint8_t>(sp_r >> 8);
+        if ((0xFF - g_registers[REG_L]) < lsb) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_L] & 0x0F) + (lsb & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_L] += lsb;
+        if (g_registers[REG_L] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+
+        //msb
+        if ((0xFF - g_registers[REG_H]) < msb) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((g_registers[REG_H] & 0x0F) + (msb & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        g_registers[REG_H] += msb;
+        if (g_registers[REG_H] == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+    }
+};
+
+instruction_table[0x04] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_B, 1);
+    }
+};
+
+instruction_table[0x0C] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_C, 1);
+    }
+};
+
+instruction_table[0x14] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_D, 1);
+    }
+};
+
+instruction_table[0x1C] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_E, 1);
+    }
+};
+
+instruction_table[0x24] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_H, 1);
+    }
+};
+
+instruction_table[0x2C] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_L, 1);
+    }
+};
+
+instruction_table[0x34] = {
+    1,
+    3,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        if ((0xFF - operand) < 1) { 
+            g_registers[REG_F] |= 0b00010000; 
+        } else { 
+            g_registers[REG_F] &= 0b11101111; 
+        } 
+        if (((operand & 0x0F) + (1 & 0x0F)) > 0x0F) { 
+            g_registers[REG_F] |= 0b00100000; 
+        } else { 
+            g_registers[REG_F] &= 0b11011111; 
+        } 
+        operand += 1;
+        if (operand == 0){ 
+            g_registers[REG_F] |= 0b10000000; 
+        } else { 
+            g_registers[REG_F] &= 0b01111111; 
+        } 
+        g_registers[REG_F] &= 0b10111111; 
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+
+instruction_table[0x3C] = {
+    1,
+    1,
+    [&](){
+        addToRegister(REG_A, 1);
+    }
+};
+
+//dec r8
+instruction_table[0x05] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_B, 1);
+    }
+};
+
+instruction_table[0x0D] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_B, 1);
+    }
+};
+
+instruction_table[0x15] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_D, 1);
+    }
+};
+
+instruction_table[0x1D] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_E, 1);
+    }
+};
+
+instruction_table[0x25] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_H, 1);
+    }
+};
+
+instruction_table[0x2D] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_L, 1);
+    }
+};
+
+instruction_table[0x35] = {
+    1,
+    1,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        if (operand < 1) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        if ((operand & 0x0F) < (1 & 0x0F)) {
+            g_registers[REG_F] |= 0b00100000;
+        } else {
+            g_registers[REG_F] &= 0b11011111;
+        }
+        operand -= 1;
+        if (operand == 0){
+            g_registers[REG_F] |= 0b10000000;
+        } else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] |= 0b01000000;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+
+instruction_table[0x3D] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_A, 1);
+    }
+};
+
+instruction_table[0x07] = {
+    1,
+    1,
+    [&](){
+        subFromRegister(REG_A, 1);
+    }
+};
+#pragma endregion
 
 //LD r, r' Load Instructions
 #pragma region LD_R_R
