@@ -50,8 +50,13 @@ class GBCpu {
         void initInstructionTables();
         std::uint8_t decodeExecuteInstruction();
         std::uint8_t handleInterrupts();
+
+        //util
         std::uint16_t getRegisterPair(RegisterPairs register_pair);
         void addToRegister(Registers reg, std::uint8_t value);
         void subFromRegister(Registers reg, std::uint8_t value);
         void setRegisterPair(std::uint16_t value, RegisterPairs register_pair);
+
+        //getters
+        std::uint8_t getRegister(Registers reg);
 };

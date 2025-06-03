@@ -17,7 +17,7 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     //decode opcode and emulate corresponding instruction
     Instruction instruction;
     if (ir_r == 0xCB){
-        ir_r = gbBus->read(pc_r);
+        ir_r = gbBus->read(pc_r + 1);
         instruction = cb_instruction_table[ir_r];
     } else {
         instruction = instruction_table[ir_r];
@@ -640,7 +640,7 @@ instruction_table[0x0F] = {
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
-        g_registers[REG_A] = (g_registers[REG_A] << 1) | carry;
+        g_registers[REG_A] = (g_registers[REG_A] >> 1) | carry;
     }
 };
 
@@ -649,12 +649,12 @@ instruction_table[0x17] = {
     1,
     [&](){
         std::uint8_t carry = g_registers[REG_A] >> 7;
+        g_registers[REG_A] = (g_registers[REG_A] << 1) | ((g_registers[REG_F] >> 4) & 0x01);
         if (carry) {
             g_registers[REG_F] |= 0b00010000;
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
-        g_registers[REG_A] = (g_registers[REG_A] << 1);
     }
 };
 
@@ -663,12 +663,12 @@ instruction_table[0x1F] = {
     1,
     [&](){
         std::uint8_t carry = g_registers[REG_A] << 7;
+        g_registers[REG_A] = (g_registers[REG_A] << 1) | ((g_registers[REG_F] << 3) & 0x80);
         if (carry) {
             g_registers[REG_F] |= 0b00010000;
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
-        g_registers[REG_A] = (g_registers[REG_A] << 1);
     }
 };
 
@@ -1876,4 +1876,213 @@ instruction_table[0xFB] = {
     }
 };
 #pragma endregion
+
+#pragma region CB_prefixed
+
+RLC_R8(0x00, B, 2, 2);
+RLC_R8(0x01, C, 2, 2);
+RLC_R8(0x02, D, 2, 2);
+RLC_R8(0x03, E, 2, 2);
+RLC_R8(0x04, H, 2, 2);
+RLC_R8(0x05, L, 2, 2);
+cb_instruction_table[0x06] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand >> 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        operand = (operand << 1) | carry;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+RLC_R8(0x07, A, 2, 2);
+
+RRC_R8(0x08, B, 2, 2);
+RRC_R8(0x09, C, 2, 2);
+RRC_R8(0x0A, D, 2, 2);
+RRC_R8(0x0B, E, 2, 2);
+RRC_R8(0x0C, H, 2, 2);
+RRC_R8(0x0D, L, 2, 2);
+cb_instruction_table[0x0E] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand << 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        operand = (operand >> 1) | carry;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+RRC_R8(0x0F, A, 2, 2);
+
+RL_R8(0x10, B, 2, 2);
+RL_R8(0x11, C, 2, 2);
+RL_R8(0x12, D, 2, 2);
+RL_R8(0x13, E, 2, 2);
+RL_R8(0x14, H, 2, 2);
+RL_R8(0x15, L, 2, 2);
+cb_instruction_table[0x16] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand >> 7;
+        operand = (operand << 1) | ((g_registers[REG_F] >> 4) & 0x01);
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+RL_R8(0x17, A, 2, 2);
+
+RR_R8(0x18, B, 2, 2);
+RR_R8(0x19, C, 2, 2);
+RR_R8(0x1A, D, 2, 2);
+RR_R8(0x1B, E, 2, 2);
+RR_R8(0x1C, H, 2, 2);
+RR_R8(0x1D, L, 2, 2);
+cb_instruction_table[0x1E] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand << 7;
+        operand = (operand >> 1) | ((g_registers[REG_F] << 3) & 0x80);
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+RR_R8(0x1F, A, 2, 2);
+
+SLA_R8(0x20, B, 2, 2);
+SLA_R8(0x21, C, 1, 2);
+SLA_R8(0x22, D, 2, 2);
+SLA_R8(0x23, E, 2, 2);
+SLA_R8(0x24, H, 2, 2);
+SLA_R8(0x25, L, 2, 2);
+cb_instruction_table[0x26] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand >> 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        operand = (operand << 1);
+        if(!operand){
+            g_registers[REG_F] |= 0b10000000;
+        }else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10011111;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+SLA_R8(0x27, A, 2, 2);
+
+SRA_R8(0x28, B, 2, 2);
+SRA_R8(0x29, C, 1, 2);
+SRA_R8(0x2A, D, 2, 2);
+SRA_R8(0x2B, E, 2, 2);
+SRA_R8(0x2C, H, 2, 2);
+SRA_R8(0x2D, L, 2, 2);
+cb_instruction_table[0x2E] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand << 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        operand = (operand >> 1);
+        if(!operand){
+            g_registers[REG_F] |= 0b10000000;
+        }else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10011111;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+SRA_R8(0x2F, A, 2, 2);
+
+SWAP_R8(0x30, B, 2, 2);
+SWAP_R8(0x31, C, 2, 2);
+SWAP_R8(0x32, D, 2, 2);
+SWAP_R8(0x33, E, 2, 2);
+SWAP_R8(0x34, H, 2, 2);
+SWAP_R8(0x35, L, 2, 2);
+cb_instruction_table[0x36] = {
+    2,
+    3,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t higher_n = operand << 4;
+        std::uint8_t lower_n = operand >> 4;
+        operand = higher_n | lower_n;
+        if(!operand){
+            g_registers[REG_F] |= 0b10000000;
+        }else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10001111;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+SWAP_R8(0x37, A, 2, 2);
+
+SRL_R8(0x38, B, 2, 2);
+SRL_R8(0x39, C, 2, 2);
+SRL_R8(0x3A, D, 2, 2);
+SRL_R8(0x3B, E, 2, 2);
+SRL_R8(0x3C, H, 2, 2);
+SRL_R8(0x3D, L, 2, 2);
+cb_instruction_table[0x3E] = {
+    2,
+    4,
+    [&](){
+        std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
+        std::uint8_t carry = operand << 7;
+        if (carry) {
+            g_registers[REG_F] |= 0b00010000;
+        } else {
+            g_registers[REG_F] &= 0b11101111;
+        }
+        operand = (operand >> 1);
+        if(!operand){
+            g_registers[REG_F] |= 0b10000000;
+        }else {
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10011111;
+        gbBus->write(operand, getRegisterPair(REG_HL));
+    }
+};
+SRL_R8(0x3F, A, 2, 2);
+
+#pragma endregion
+
 }
