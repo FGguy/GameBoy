@@ -38,6 +38,7 @@ class GBCpu {
         std::vector<std::uint8_t> g_registers; //a, f, b, c, d, e, h, l
 
         bool g_halted;
+        bool g_stopped;
 
         Instruction instruction_table[256];
         Instruction cb_instruction_table[256];

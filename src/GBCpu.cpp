@@ -4,7 +4,8 @@
 GBCpu::GBCpu(GBBus* gbBus):
     gbBus{gbBus},
     pc_r{0x0000},
-    g_halted{false}
+    g_halted{false},
+    g_stopped{false} //need to turn false if true when input is detected
 {
     initInstructionTables();
 }
@@ -721,6 +722,70 @@ instruction_table[0x3F] = {
     [&](){
         g_registers[REG_F] ^= 0b00010000;
         g_registers[REG_F] &= 0b10010000;
+    }
+};
+
+//jr
+instruction_table[0x18] = {
+    2,
+    3,
+    [&](){
+        std::int8_t e = gbBus->read(pc_r + 1);
+        pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+    }
+};
+
+//jr cc
+// cycles, 2 false, 3 true
+instruction_table[0x20] = {
+    2,
+    3,
+    [&](){
+        if(g_registers[REG_F] & 0b00010000){
+            std::int8_t e = gbBus->read(pc_r + 1);
+            pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+        }
+    }
+};
+
+instruction_table[0x28] = {
+    2,
+    3,
+    [&](){
+        if(!(g_registers[REG_F] & 0b00010000)){
+            std::int8_t e = gbBus->read(pc_r + 1);
+            pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+        }
+    }
+};
+
+instruction_table[0x30] = {
+    2,
+    3,
+    [&](){
+        if(g_registers[REG_F] & 0b10000000){
+            std::int8_t e = gbBus->read(pc_r + 1);
+            pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+        }
+    }
+};
+
+instruction_table[0x38] = {
+    2,
+    3,
+    [&](){
+        if(!(g_registers[REG_F] & 0b10000000)){
+            std::int8_t e = gbBus->read(pc_r + 1);
+            pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+        }
+    }
+};
+
+instruction_table[0x10] = {
+    2,
+    1,
+    [&](){
+        g_stopped = true;
     }
 };
 
