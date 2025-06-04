@@ -28,6 +28,28 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     return data.cycles;
 }
 
+std::uint8_t GBCpu::readR8(std::uint8_t r8){
+    if (r8 < 6){
+        return g_registers[r8 + 2];
+    } else if(r8 == 6){
+        return gbBus->read(getRegisterPair(REG_HL));
+    } else if(r8 == 7){
+        return g_registers[REG_A];
+    } else {
+        return 0xFF;
+    }
+}
+
+void GBCpu::writeR8(std::uint8_t value, std::uint8_t r8){
+    if (r8 < 6){
+        g_registers[r8 + 2] = value;
+    } else if(r8 == 6){
+        gbBus->write(value, getRegisterPair(REG_HL));
+    } else if(r8 == 7){
+        g_registers[REG_A] = value;
+    }
+}
+
 void GBCpu::addToRegister(Registers reg, std::uint8_t value){
         if ((0xFF - g_registers[reg]) < value) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -1983,6 +2005,73 @@ cb_instruction_table[0x3E] = {
     }
 };
 SRL_R8(0x3F, A, 2, 2);
+
+//Too lazy to do all of these individually, also kinda useless to do so.
+Instruction bit_r8 = {
+    [&]() -> InstructionData {
+        std::uint8_t opcode = gbBus->read(pc_r + 1);
+        std::uint8_t r8 = opcode & 0b00000111;        
+        std::uint8_t b3 = (opcode >> 3) & 0b00000111;
+        std::uint8_t operand = readR8(r8);
+        operand = operand >> b3;
+        if (operand & 0x01){
+            g_registers[REG_F] |= 0b10000000;
+        }else{
+            g_registers[REG_F] &= 0b01111111;
+        }
+        g_registers[REG_F] &= 0b10111111;
+        g_registers[REG_F] |= 0b00100000;
+        if(r8 == 6){
+            return {2, 3}; //HL
+        } else {
+            return {2, 2};
+        }
+    }   
+};
+
+for(uint8_t i = 0x40; i < 0x80; i++){
+    cb_instruction_table[i] = bit_r8;
+}
+
+Instruction res_r8 = {
+    [&]() -> InstructionData {
+        std::uint8_t opcode = gbBus->read(pc_r + 1);
+        std::uint8_t r8 = opcode & 0b00000111;        
+        std::uint8_t b3 = (opcode >> 3) & 0b00000111;
+        std::uint8_t operand = readR8(r8);
+        std::uint8_t bitmask = 0b00000001 << b3;
+        writeR8(operand | ~bitmask, r8);
+        if(r8 == 6){
+            return {2, 4}; //HL
+        } else {
+            return {2, 2};
+        }
+    }   
+};
+
+for(uint8_t i = 0x80; i < 0xC0; i++){
+    cb_instruction_table[i] = res_r8;
+}
+
+Instruction set_r8 = {
+    [&]() -> InstructionData {
+        std::uint8_t opcode = gbBus->read(pc_r + 1);
+        std::uint8_t r8 = opcode & 0b00000111;        
+        std::uint8_t b3 = (opcode >> 3) & 0b00000111;
+        std::uint8_t operand = readR8(r8);
+        std::uint8_t bit = 0b00000001 << b3;
+        writeR8(operand | bit, r8);
+        if(r8 == 6){
+            return {2, 4}; //HL
+        } else {
+            return {2, 2};
+        }
+    }   
+};
+
+for(uint8_t i = 0xC0; i <= 0xFF; i++){
+    cb_instruction_table[i] = set_r8;
+}
 
 #pragma endregion
 
