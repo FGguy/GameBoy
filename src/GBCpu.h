@@ -22,10 +22,13 @@ enum Registers {
     REG_L
 };
 
-struct Instruction {
+struct InstructionData {
     uint8_t length;
     uint8_t cycles;
-    std::function<void()> execute;
+};
+
+struct Instruction {
+    std::function<InstructionData()> execute;
 };
 
 class GBCpu {
@@ -39,6 +42,7 @@ class GBCpu {
 
         bool g_halted;
         bool g_stopped;
+        bool unimpl_instruction_reached;
 
         Instruction instruction_table[256];
         Instruction cb_instruction_table[256];

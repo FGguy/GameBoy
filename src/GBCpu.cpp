@@ -5,7 +5,8 @@ GBCpu::GBCpu(GBBus* gbBus):
     gbBus{gbBus},
     pc_r{0x0000},
     g_halted{false},
-    g_stopped{false} //need to turn false if true when input is detected
+    g_stopped{false}, //need to turn false if true when input is detected
+    unimpl_instruction_reached{false}
 {
     initInstructionTables();
 }
@@ -22,9 +23,9 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     } else {
         instruction = instruction_table[ir_r];
     }
-    instruction.execute();
-    pc_r += instruction.length; //TODO: adjust accordingly to how i decide to store the instruction length in the tables.
-    return instruction.cycles;
+    InstructionData data = instruction.execute();
+    pc_r += data.length; //TODO: adjust accordingly to how i decide to store the instruction length in the tables.
+    return data.cycles;
 }
 
 void GBCpu::addToRegister(Registers reg, std::uint8_t value){
@@ -78,208 +79,192 @@ void GBCpu::setRegisterPair(std::uint16_t value, RegisterPairs register_pair){
 }
 
 void GBCpu::initInstructionTables(){
-//need to refactor instructions to return cycles and length
 //potential bug, incrementing the pc after setting its value;
-//all entries in both tables need to be initialized;
 //why are flags set on increments and decrements on individual registers but not register pairs
-// B C D E H L [HL] A
+
+const Instruction NonImplemented = {
+    [&]() -> InstructionData {
+        unimpl_instruction_reached = true;
+        return {0, 0};
+    }
+};
+
+for(int i = 0; i < 256; i++){
+    instruction_table[i] = NonImplemented;
+    cb_instruction_table[i] = NonImplemented;
+}
 
 #pragma region Block_1
 
 instruction_table[0x00] = {
-    1,
-    1,
-    [&](){
-
+    [&]() -> InstructionData {
+        return {1, 1};
     }
 };
 
 instruction_table[0x01] = {
-    3,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
         val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         setRegisterPair(val, REG_BC);
+        return {3, 3};
     }
 };
 
 instruction_table[0x11] = {
-    3,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
         val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         setRegisterPair(val, REG_DE);
+        return {3, 3};
     }
 };
 
 instruction_table[0x21] = {
-    3,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
         val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         setRegisterPair(val, REG_HL);
+        return {3, 3};
     }
 };
 
 instruction_table[0x31] = {
-    3,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
         val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         setRegisterPair(val, REG_AF);
+        return {3, 3};
     }
 };
 
 instruction_table[0x02] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
+        return {1, 2};
     }
 };
 
 instruction_table[0x12] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(g_registers[REG_A], getRegisterPair(REG_DE));
+        return {1, 2};
     }
 };
 
 instruction_table[0x22] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
         setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x32] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
         setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x0A] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(getRegisterPair(REG_BC));
+        return {1, 2};
     }
 };
 
 instruction_table[0x1A] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(getRegisterPair(REG_DE));
+        return {1, 2};
     }
 };
 
 instruction_table[0x2A] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(getRegisterPair(REG_HL));
         setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x3A] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(getRegisterPair(REG_HL));
         setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x08] = {
-    3,
-    5,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
         addr |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         gbBus->write(static_cast<std::uint8_t>(sp_r >> 8), addr);
+        return {3, 5};
     }
 };
 
 instruction_table[0x03] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_BC) + 1, REG_BC);
+        return {1, 2};
     }
 };
 
 instruction_table[0x13] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_DE) + 1, REG_DE);
+        return {1, 2};
     }
 };
 
 instruction_table[0x23] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_HL) + 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x33] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         sp_r += 1;
+        return {1, 2};
     }
 };
 
 instruction_table[0x0B] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_BC) - 1, REG_BC);
+        return {1, 2};
     }
 };
 
 instruction_table[0x1B] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_DE) - 1, REG_DE);
+        return {1, 2};
     }
 };
 
 instruction_table[0x2B] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_HL) - 1, REG_HL);
+        return {1, 2};
     }
 };
 
 instruction_table[0x3B] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         sp_r -= 1;
+        return {1, 2};
     }
 };
 
 instruction_table[0x09] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         //lsb
         if ((0xFF - g_registers[REG_L]) < g_registers[REG_C]) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -317,13 +302,12 @@ instruction_table[0x09] = {
             g_registers[REG_F] &= 0b01111111; 
         } 
         g_registers[REG_F] &= 0b10111111; 
+        return {1, 2};
     }
 };
 
 instruction_table[0x19] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         if ((0xFF - g_registers[REG_L]) < g_registers[REG_E]) { 
             g_registers[REG_F] |= 0b00010000; 
         } else { 
@@ -360,13 +344,12 @@ instruction_table[0x19] = {
             g_registers[REG_F] &= 0b01111111; 
         } 
         g_registers[REG_F] &= 0b10111111; 
+        return {1, 2};
     }
 };
 
 instruction_table[0x29] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         if ((0xFF - g_registers[REG_L]) < g_registers[REG_L]) { 
             g_registers[REG_F] |= 0b00010000; 
         } else { 
@@ -403,13 +386,12 @@ instruction_table[0x29] = {
             g_registers[REG_F] &= 0b01111111; 
         } 
         g_registers[REG_F] &= 0b10111111; 
+        return {1, 2};
     }
 };
 
 instruction_table[0x39] = {
-    1,
-    2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t lsb = static_cast<std::uint8_t>(sp_r & 0x00FF);
         std::uint8_t msb = static_cast<std::uint8_t>(sp_r >> 8);
         if ((0xFF - g_registers[REG_L]) < lsb) { 
@@ -448,61 +430,54 @@ instruction_table[0x39] = {
             g_registers[REG_F] &= 0b01111111; 
         } 
         g_registers[REG_F] &= 0b10111111; 
+        return {1, 2};
     }
 };
 
 instruction_table[0x04] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_B, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x0C] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_C, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x14] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_D, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x1C] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_E, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x24] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_H, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x2C] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_L, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x34] = {
-    1,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         if ((0xFF - operand) < 1) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -522,70 +497,62 @@ instruction_table[0x34] = {
         } 
         g_registers[REG_F] &= 0b10111111; 
         gbBus->write(operand, getRegisterPair(REG_HL));
+        return {1, 3};
     }
 };
 
 instruction_table[0x3C] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         addToRegister(REG_A, 1);
+        return {1, 1};
     }
 };
 
 //dec r8
 instruction_table[0x05] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_B, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x0D] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_B, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x15] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_D, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x1D] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_E, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x25] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_H, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x2D] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_L, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x35] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         if (operand < 1) {
             g_registers[REG_F] |= 0b00010000;
@@ -605,21 +572,19 @@ instruction_table[0x35] = {
         }
         g_registers[REG_F] |= 0b01000000;
         gbBus->write(operand, getRegisterPair(REG_HL));
+        return {1, 3};
     }
 };
 
 instruction_table[0x3D] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         subFromRegister(REG_A, 1);
+        return {1, 1};
     }
 };
 
 instruction_table[0x07] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t carry = g_registers[REG_A] >> 7;
         if (carry) {
             g_registers[REG_F] |= 0b00010000;
@@ -627,13 +592,12 @@ instruction_table[0x07] = {
             g_registers[REG_F] &= 0b11101111;
         }
         g_registers[REG_A] = (g_registers[REG_A] << 1) | carry;
+        return {1, 1};
     }
 };
 
 instruction_table[0x0F] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t carry = g_registers[REG_A] << 7;
         if (carry) {
             g_registers[REG_F] |= 0b00010000;
@@ -641,13 +605,12 @@ instruction_table[0x0F] = {
             g_registers[REG_F] &= 0b11101111;
         }
         g_registers[REG_A] = (g_registers[REG_A] >> 1) | carry;
+        return {1, 1};
     }
 };
 
 instruction_table[0x17] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t carry = g_registers[REG_A] >> 7;
         g_registers[REG_A] = (g_registers[REG_A] << 1) | ((g_registers[REG_F] >> 4) & 0x01);
         if (carry) {
@@ -655,13 +618,12 @@ instruction_table[0x17] = {
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
+        return {1, 1};
     }
 };
 
 instruction_table[0x1F] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t carry = g_registers[REG_A] << 7;
         g_registers[REG_A] = (g_registers[REG_A] << 1) | ((g_registers[REG_F] << 3) & 0x80);
         if (carry) {
@@ -669,14 +631,13 @@ instruction_table[0x1F] = {
         } else {
             g_registers[REG_F] &= 0b11101111;
         }
+        return {1, 1};
     }
 };
 
 //daa
 instruction_table[0x27] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         if(g_registers[REG_F] & 0x40){ //sub
             if(g_registers[REG_F] & 0x10){ //carry
                 g_registers[REG_A] -= 0x60;
@@ -692,100 +653,92 @@ instruction_table[0x27] = {
                 g_registers[REG_A] += 0x06;
             }
         }
+        return {1, 1};
     }
 };
 
 //cpl
 instruction_table[0x2F] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = ~g_registers[REG_A];
         g_registers[REG_F] |= 0b01100000;
+        return {1, 1};
     }
 };
 
 //scf
 instruction_table[0x37] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_F] |= 0b00010000;
         g_registers[REG_F] &= 0b10010000;
+        return {1, 1};
     }
 };
 
 //ccf
 instruction_table[0x3F] = {
-    1,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_F] ^= 0b00010000;
         g_registers[REG_F] &= 0b10010000;
+        return {1, 1};
     }
 };
 
 //jr
 instruction_table[0x18] = {
-    2,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         std::int8_t e = gbBus->read(pc_r + 1);
         pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+        return {2, 3};
     }
 };
 
 //jr cc
 // cycles, 2 false, 3 true
 instruction_table[0x20] = {
-    2,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         if(g_registers[REG_F] & 0b00010000){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
         }
+        return {2, 3};
     }
 };
 
 instruction_table[0x28] = {
-    2,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         if(!(g_registers[REG_F] & 0b00010000)){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
         }
+        return {2, 3};
     }
 };
 
 instruction_table[0x30] = {
-    2,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         if(g_registers[REG_F] & 0b10000000){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
         }
+        return {2, 3};
     }
 };
 
 instruction_table[0x38] = {
-    2,
-    3,
-    [&](){
+    [&]() -> InstructionData {
         if(!(g_registers[REG_F] & 0b10000000)){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
         }
+        return {2, 3};
     }
 };
 
 instruction_table[0x10] = {
-    2,
-    1,
-    [&](){
+    [&]() -> InstructionData {
         g_stopped = true;
+        return {2, 1};
     }
 };
 
@@ -856,7 +809,7 @@ LD_REG_HL_MEM(0x75, L, 1, 2);
 instruction_table[0x76] = {
     1,
     1,
-    [&](){
+    [&]() -> InstructionData {
         g_halted = true;
     }
 };
@@ -878,7 +831,7 @@ LD_REG_REG(0x7F, A, A, 1, 1);
 instruction_table[0x06] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_B] = gbBus->read(pc_r + 1);
     }
 };
@@ -886,7 +839,7 @@ instruction_table[0x06] = {
 instruction_table[0x0E] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_C] = gbBus->read(pc_r + 1);
     }
 };
@@ -894,7 +847,7 @@ instruction_table[0x0E] = {
 instruction_table[0x16] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_D] = gbBus->read(pc_r + 1);
     }
 };
@@ -902,7 +855,7 @@ instruction_table[0x16] = {
 instruction_table[0x1E] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_E] = gbBus->read(pc_r + 1);
     }
 };
@@ -910,7 +863,7 @@ instruction_table[0x1E] = {
 instruction_table[0x26] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_H] = gbBus->read(pc_r + 1);
     }
 };
@@ -918,7 +871,7 @@ instruction_table[0x26] = {
 instruction_table[0x2E] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_L] = gbBus->read(pc_r + 1);
     }
 };
@@ -926,7 +879,7 @@ instruction_table[0x2E] = {
 instruction_table[0x36] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(gbBus->read(pc_r + 1), getRegisterPair(REG_HL));
     }
 };
@@ -934,7 +887,7 @@ instruction_table[0x36] = {
 instruction_table[0x3E] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(pc_r + 1);
     }
 };
@@ -953,7 +906,7 @@ ADD_A_R(0x85, L, 1, 1);
 instruction_table[0x86] = { 
     1, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         if ((0xFF - g_registers[REG_A]) < num) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -985,7 +938,7 @@ ADC_A_R(0x8D, L, 1, 1);
 instruction_table[0x8E] = { 
     1, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
         if ((0xFF - g_registers[REG_A]) < (num + carry)) { 
@@ -1018,7 +971,7 @@ SUB_A_R(0x95, L, 1, 1);
 instruction_table[0x96] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         if (g_registers[REG_A] < num) {
             g_registers[REG_F] |= 0b00010000;
@@ -1050,7 +1003,7 @@ SBC_A_R(0x9D, L, 1, 1);
 instruction_table[0x9E] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
         if (g_registers[REG_A] < (num + carry)) {
@@ -1083,7 +1036,7 @@ AND_A_R(0xA5, L, 1, 1);
 instruction_table[0xA6] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         g_registers[REG_A] &= num;
         if (g_registers[REG_A] == 0){
@@ -1107,7 +1060,7 @@ XOR_A_R(0xAD, L, 1, 1);
 instruction_table[0xAE] = { 
     1, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         g_registers[REG_A] ^= num; 
         if (g_registers[REG_A] == 0){ 
@@ -1131,7 +1084,7 @@ OR_A_R(0xB5, L, 1, 1);
 instruction_table[0xB6] = { 
     1, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         g_registers[REG_A] |= num; 
         if (g_registers[REG_A] == 0){ 
@@ -1155,7 +1108,7 @@ CP_A_R(0xBD, L, 1, 1);
 instruction_table[0xBE] = { 
     1, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(getRegisterPair(REG_HL));
         if (g_registers[REG_A] < num) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -1184,7 +1137,7 @@ CP_A_R(0xBF, A, 1, 1);
 instruction_table[0xC6] = { 
     2, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(pc_r + 1);
         if ((0xFF - g_registers[REG_A]) < num) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -1210,7 +1163,7 @@ instruction_table[0xC6] = {
 instruction_table[0xCE] = { 
     2, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(pc_r + 1);
         std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
         if ((0xFF - g_registers[REG_A]) < (num + carry)) { 
@@ -1237,7 +1190,7 @@ instruction_table[0xCE] = {
 instruction_table[0xD6] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(pc_r + 1);
         if (g_registers[REG_A] < num) {
             g_registers[REG_F] |= 0b00010000;
@@ -1263,7 +1216,7 @@ instruction_table[0xD6] = {
 instruction_table[0xDE] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(pc_r + 1);
         std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;
         if (g_registers[REG_A] < (num + carry)) {
@@ -1290,7 +1243,7 @@ instruction_table[0xDE] = {
 instruction_table[0xE6] = {
     2,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t num = gbBus->read(pc_r + 1);
         g_registers[REG_A] &= num;
         if (g_registers[REG_A] == 0){
@@ -1308,7 +1261,7 @@ instruction_table[0xE6] = {
 instruction_table[0xEE] = { 
     2, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(pc_r + 1);
         g_registers[REG_A] ^= num; 
         if (g_registers[REG_A] == 0){ 
@@ -1326,7 +1279,7 @@ instruction_table[0xEE] = {
 instruction_table[0xF6] = { 
     2, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(pc_r + 1);
         g_registers[REG_A] |= num; 
         if (g_registers[REG_A] == 0){ 
@@ -1343,7 +1296,7 @@ instruction_table[0xF6] = {
 instruction_table[0xFE] = { 
     2, 
     2, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint8_t num = gbBus->read(pc_r + 1);
         if (g_registers[REG_A] < num) { 
             g_registers[REG_F] |= 0b00010000; 
@@ -1368,7 +1321,7 @@ instruction_table[0xFE] = {
 instruction_table[0xC9] = { //possible bug, ambiguity in docs
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         pc_r = addr;
@@ -1379,7 +1332,7 @@ instruction_table[0xC9] = { //possible bug, ambiguity in docs
 instruction_table[0xD9] = { //possible bug, ambiguity in docs
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         pc_r = addr;
@@ -1394,7 +1347,7 @@ instruction_table[0xD9] = { //possible bug, ambiguity in docs
 instruction_table[0xC0] = { 
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         if (!(g_registers[REG_F] & 0b10000000)){
             std::uint16_t addr = gbBus->read(sp_r++); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
@@ -1405,7 +1358,7 @@ instruction_table[0xC0] = {
 instruction_table[0xC8] = { 
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         if (g_registers[REG_F] & 0b10000000){
             std::uint16_t addr = gbBus->read(sp_r++); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
@@ -1416,7 +1369,7 @@ instruction_table[0xC8] = {
 instruction_table[0xD0] = { 
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         if (!(g_registers[REG_F] & 0b00010000)){
             std::uint16_t addr = gbBus->read(sp_r++); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
@@ -1427,7 +1380,7 @@ instruction_table[0xD0] = {
 instruction_table[0xD8] = { 
     1, 
     4, 
-    [&](){ 
+    [&]() -> InstructionData { 
         if (g_registers[REG_F] & 0b00010000){
             std::uint16_t addr = gbBus->read(sp_r++); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
@@ -1440,7 +1393,7 @@ instruction_table[0xD8] = {
 instruction_table[0xC3] = {
     3,
     4,
-    [&](){ 
+    [&]() -> InstructionData { 
         std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
         pc_r = addr;
@@ -1451,7 +1404,7 @@ instruction_table[0xC3] = {
 instruction_table[0xE9] = {
     1,
     1,
-    [&](){ 
+    [&]() -> InstructionData { 
         pc_r = gbBus->read(getRegisterPair(REG_HL));
     }
 };
@@ -1462,7 +1415,7 @@ instruction_table[0xE9] = {
 instruction_table[0xC2] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         if (!(g_registers[REG_F] & 0b10000000)){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1474,7 +1427,7 @@ instruction_table[0xC2] = {
 instruction_table[0xCA] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         if (g_registers[REG_F] & 0b10000000){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1486,7 +1439,7 @@ instruction_table[0xCA] = {
 instruction_table[0xD2] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         if (!(g_registers[REG_F] & 0b00010000)){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1498,7 +1451,7 @@ instruction_table[0xD2] = {
 instruction_table[0xDA] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         if (g_registers[REG_F] & 0b00010000){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1510,7 +1463,7 @@ instruction_table[0xDA] = {
 instruction_table[0xCD] = {
     3,
     6,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
         //push current pc val to stack
@@ -1525,7 +1478,7 @@ instruction_table[0xCD] = {
 instruction_table[0xC4] = {
     3,
     6,
-    [&](){
+    [&]() -> InstructionData {
         if (!(g_registers[REG_F] & 0b10000000)){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1540,7 +1493,7 @@ instruction_table[0xC4] = {
 instruction_table[0xCC] = {
     3,
     6,
-    [&](){
+    [&]() -> InstructionData {
         if (g_registers[REG_F] & 0b10000000){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1555,7 +1508,7 @@ instruction_table[0xCC] = {
 instruction_table[0xD4] = {
     3,
     6,
-    [&](){
+    [&]() -> InstructionData {
         if (!(g_registers[REG_F] & 0b00010000)){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1570,7 +1523,7 @@ instruction_table[0xD4] = {
 instruction_table[0xD4] = {
     3,
     6,
-    [&](){
+    [&]() -> InstructionData {
         if (g_registers[REG_F] & 0b00010000){
             std::uint16_t addr = gbBus->read(pc_r + 1); //lsb
             addr = addr | (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8); //msb
@@ -1587,7 +1540,7 @@ instruction_table[0xD4] = {
 instruction_table[0xC7] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0000;
@@ -1597,7 +1550,7 @@ instruction_table[0xC7] = {
 instruction_table[0xCF] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0008;
@@ -1607,7 +1560,7 @@ instruction_table[0xCF] = {
 instruction_table[0xD7] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0010;
@@ -1617,7 +1570,7 @@ instruction_table[0xD7] = {
 instruction_table[0xDF] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0018;
@@ -1627,7 +1580,7 @@ instruction_table[0xDF] = {
 instruction_table[0xE7] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0020;
@@ -1637,7 +1590,7 @@ instruction_table[0xE7] = {
 instruction_table[0xEF] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0028;
@@ -1647,7 +1600,7 @@ instruction_table[0xEF] = {
 instruction_table[0xF7] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0030;
@@ -1657,7 +1610,7 @@ instruction_table[0xF7] = {
 instruction_table[0xFF] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(pc_r & 0x00FF), --sp_r); //lsb
         pc_r = 0x0038;
@@ -1669,7 +1622,7 @@ instruction_table[0xFF] = {
 instruction_table[0xC5] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = getRegisterPair(REG_BC);
         gbBus->write(static_cast<std::uint8_t>(addr >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(addr & 0x00FF), --sp_r); //lsb
@@ -1679,7 +1632,7 @@ instruction_table[0xC5] = {
 instruction_table[0xD5] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = getRegisterPair(REG_DE);
         gbBus->write(static_cast<std::uint8_t>(addr >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(addr & 0x00FF), --sp_r); //lsb
@@ -1689,7 +1642,7 @@ instruction_table[0xD5] = {
 instruction_table[0xE5] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = getRegisterPair(REG_HL);
         gbBus->write(static_cast<std::uint8_t>(addr >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(addr & 0x00FF), --sp_r); //lsb
@@ -1699,7 +1652,7 @@ instruction_table[0xE5] = {
 instruction_table[0xF5] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = getRegisterPair(REG_AF);
         gbBus->write(static_cast<std::uint8_t>(addr >> 8), --sp_r); //msb
         gbBus->write(static_cast<std::uint8_t>(addr & 0x00FF), --sp_r); //lsb
@@ -1711,7 +1664,7 @@ instruction_table[0xF5] = {
 instruction_table[0xC1] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         setRegisterPair(addr, REG_BC);
@@ -1721,7 +1674,7 @@ instruction_table[0xC1] = {
 instruction_table[0xD1] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         setRegisterPair(addr, REG_DE);
@@ -1731,7 +1684,7 @@ instruction_table[0xD1] = {
 instruction_table[0xE1] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         setRegisterPair(addr, REG_HL);
@@ -1741,7 +1694,7 @@ instruction_table[0xE1] = {
 instruction_table[0xF1] = {
     1,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(sp_r++); //lsb
         addr = addr | (static_cast<std::uint16_t>(gbBus->read(sp_r++)) << 8); //msb
         setRegisterPair(addr, REG_AF);
@@ -1752,7 +1705,7 @@ instruction_table[0xF1] = {
 instruction_table[0xE0] = {
     2,
     3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
         addr |= 0xFF00;
         gbBus->write(g_registers[REG_A], addr);
@@ -1762,7 +1715,7 @@ instruction_table[0xE0] = {
 instruction_table[0xE2] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = g_registers[REG_C];
         addr |= 0xFF00;
         gbBus->write(g_registers[REG_A], addr);
@@ -1772,7 +1725,7 @@ instruction_table[0xE2] = {
 instruction_table[0xE2] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
         addr |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         gbBus->write(g_registers[REG_A], addr);
@@ -1782,7 +1735,7 @@ instruction_table[0xE2] = {
 instruction_table[0xF2] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = g_registers[REG_C];
         addr |= 0xFF00;
         g_registers[REG_A] = gbBus->read(addr);
@@ -1792,7 +1745,7 @@ instruction_table[0xF2] = {
 instruction_table[0xF0] = {
     2,
     3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
         addr |= 0xFF00;
         g_registers[REG_A] = gbBus->read(addr);
@@ -1802,7 +1755,7 @@ instruction_table[0xF0] = {
 instruction_table[0xFA] = {
     3,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
         addr |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
         g_registers[REG_A] = gbBus->read(addr);
@@ -1813,7 +1766,7 @@ instruction_table[0xFA] = {
 instruction_table[0xE8] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t e = gbBus->read(pc_r + 1);
         if ((0xFF - e) < sp_r & 0x00FF) {
             g_registers[REG_F] |= 0b00010000;
@@ -1834,7 +1787,7 @@ instruction_table[0xE8] = {
 instruction_table[0xF8] = {
     2,
     3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t e = gbBus->read(pc_r + 1);
         if ((0xFF - e) < sp_r & 0x00FF) {
             g_registers[REG_F] |= 0b00010000;
@@ -1855,7 +1808,7 @@ instruction_table[0xF8] = {
 instruction_table[0xF9] = {
     1,
     2,
-    [&](){
+    [&]() -> InstructionData {
         sp_r = getRegisterPair(REG_HL);
     }
 };
@@ -1863,7 +1816,7 @@ instruction_table[0xF9] = {
 instruction_table[0xF3] = {
     1,
     1,
-    [&](){
+    [&]() -> InstructionData {
         ime_r = 0;
     }
 };
@@ -1871,7 +1824,7 @@ instruction_table[0xF3] = {
 instruction_table[0xFB] = {
     1,
     1,
-    [&](){
+    [&]() -> InstructionData {
         ime_r = 1;
     }
 };
@@ -1888,7 +1841,7 @@ RLC_R8(0x05, L, 2, 2);
 cb_instruction_table[0x06] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand >> 7;
         if (carry) {
@@ -1911,7 +1864,7 @@ RRC_R8(0x0D, L, 2, 2);
 cb_instruction_table[0x0E] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand << 7;
         if (carry) {
@@ -1934,7 +1887,7 @@ RL_R8(0x15, L, 2, 2);
 cb_instruction_table[0x16] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand >> 7;
         operand = (operand << 1) | ((g_registers[REG_F] >> 4) & 0x01);
@@ -1957,7 +1910,7 @@ RR_R8(0x1D, L, 2, 2);
 cb_instruction_table[0x1E] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand << 7;
         operand = (operand >> 1) | ((g_registers[REG_F] << 3) & 0x80);
@@ -1980,7 +1933,7 @@ SLA_R8(0x25, L, 2, 2);
 cb_instruction_table[0x26] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand >> 7;
         if (carry) {
@@ -2009,7 +1962,7 @@ SRA_R8(0x2D, L, 2, 2);
 cb_instruction_table[0x2E] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand << 7;
         if (carry) {
@@ -2038,7 +1991,7 @@ SWAP_R8(0x35, L, 2, 2);
 cb_instruction_table[0x36] = {
     2,
     3,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t higher_n = operand << 4;
         std::uint8_t lower_n = operand >> 4;
@@ -2063,7 +2016,7 @@ SRL_R8(0x3D, L, 2, 2);
 cb_instruction_table[0x3E] = {
     2,
     4,
-    [&](){
+    [&]() -> InstructionData {
         std::uint8_t operand = gbBus->read(getRegisterPair(REG_HL));
         std::uint8_t carry = operand << 7;
         if (carry) {
