@@ -1749,7 +1749,7 @@ instruction_table[0xFA] = {
 instruction_table[0xE8] = {
     [&]() -> InstructionData {
         std::uint8_t e = gbBus->read(pc_r + 1);
-        if ((0xFF - e) < sp_r & 0x00FF) {
+        if ((0xFF - e) < (sp_r & 0x00FF)) {
             g_registers[REG_F] |= 0b00010000;
         } else {
             g_registers[REG_F] &= 0b11101111;
@@ -1769,7 +1769,7 @@ instruction_table[0xE8] = {
 instruction_table[0xF8] = {
     [&]() -> InstructionData {
         std::uint8_t e = gbBus->read(pc_r + 1);
-        if ((0xFF - e) < sp_r & 0x00FF) {
+        if ((0xFF - e) < (sp_r & 0x00FF)) {
             g_registers[REG_F] |= 0b00010000;
         } else {
             g_registers[REG_F] &= 0b11101111;
