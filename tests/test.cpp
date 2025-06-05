@@ -68,7 +68,7 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
         WHEN("The AF register pair is set."){
             cpu.setRegisterPair(0xDEAD, REG_AF);
             THEN("The lower 4 bits of the F register are set to 0."){
-                REQUIRE(cpu.getRegister(REG_F) & 0x0F == 0);
+                REQUIRE((cpu.getRegister(REG_F) & 0x0F) == 0);
             }
         }
 
@@ -78,51 +78,51 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
                 cpu.setRegister(0x00, REG_H); //required, register are unitialized by default
                 cpu.addToRegister(REG_H, 0x09);
                 std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 0); //Carry
-                REQUIRE(flag & 0x20 == 0); //Half-Carry
-                REQUIRE(flag & 0x20 == 0); //Subtraction
-                REQUIRE(flag & 0x80 == 0); //Zero
+                REQUIRE((flag & 0x10) == 0); //Carry
+                REQUIRE((flag & 0x20) == 0); //Half-Carry
+                REQUIRE((flag & 0x40) == 0); //Subtraction
+                REQUIRE((flag & 0x80) == 0); //Zero
 
                 cpu.setRegister(0x01, REG_H);
                 cpu.addToRegister(REG_H, 0xFF);
-                std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 1); //Carry
-                REQUIRE(flag & 0x20 == 0); //Half-Carry
-                REQUIRE(flag & 0x20 == 0); //Subtraction
-                REQUIRE(flag & 0x80 == 1); //Zero
+                flag = cpu.getRegister(REG_F);
+                REQUIRE((flag & 0x10) == 1); //Carry
+                REQUIRE((flag & 0x20) == 0); //Half-Carry
+                REQUIRE((flag & 0x40) == 0); //Subtraction
+                REQUIRE((flag & 0x80) == 1); //Zero
 
                 cpu.setRegister(0x0F, REG_H);
                 cpu.addToRegister(REG_H, 0x0F);
-                std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 0); //Carry
-                REQUIRE(flag & 0x20 == 1); //Half-Carry
-                REQUIRE(flag & 0x20 == 0); //Subtraction
-                REQUIRE(flag & 0x80 == 0); //Zero
+                flag = cpu.getRegister(REG_F);
+                REQUIRE((flag & 0x10) == 0); //Carry
+                REQUIRE((flag & 0x20) == 1); //Half-Carry
+                REQUIRE((flag & 0x40) == 0); //Subtraction
+                REQUIRE((flag & 0x80) == 0); //Zero
 
                 //Substraction
                 cpu.setRegister(0x00, REG_H); //required, register are unitialized by default
                 cpu.subFromRegister(REG_H, 0x09);
-                std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 1); //Carry
-                REQUIRE(flag & 0x20 == 0); //Half-Carry
-                REQUIRE(flag & 0x20 == 1); //Subtraction
-                REQUIRE(flag & 0x80 == 0); //Zero
+                flag = cpu.getRegister(REG_F);
+                REQUIRE((flag & 0x10) == 1); //Carry
+                REQUIRE((flag & 0x20) == 0); //Half-Carry
+                REQUIRE((flag & 0x40) == 1); //Subtraction
+                REQUIRE((flag & 0x80) == 0); //Zero
 
                 cpu.setRegister(0x0F, REG_H);
                 cpu.subFromRegister(REG_H, 0x0F);
-                std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 0); //Carry
-                REQUIRE(flag & 0x20 == 0); //Half-Carry
-                REQUIRE(flag & 0x20 == 1); //Subtraction
-                REQUIRE(flag & 0x80 == 1); //Zero
+                flag = cpu.getRegister(REG_F);
+                REQUIRE((flag & 0x10) == 0); //Carry
+                REQUIRE((flag & 0x20) == 0); //Half-Carry
+                REQUIRE((flag & 0x40) == 1); //Subtraction
+                REQUIRE((flag & 0x80) == 1); //Zero
 
                 cpu.setRegister(0x18, REG_H);
                 cpu.subFromRegister(REG_H, 0x0F);
-                std::uint8_t flag = cpu.getRegister(REG_F);
-                REQUIRE(flag & 0x10 == 0); //Carry
-                REQUIRE(flag & 0x20 == 1); //Half-Carry
-                REQUIRE(flag & 0x20 == 1); //Subtraction
-                REQUIRE(flag & 0x80 == 0); //Zero
+                flag = cpu.getRegister(REG_F);
+                REQUIRE((flag & 0x10) == 0); //Carry
+                REQUIRE((flag & 0x20) == 1); //Half-Carry
+                REQUIRE((flag & 0x40) == 1); //Subtraction
+                REQUIRE((flag & 0x80) == 0); //Zero
             }
         }
     }
