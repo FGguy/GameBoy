@@ -3,12 +3,13 @@
 
 GBCpu::GBCpu(GBBus* gbBus):
     gbBus{gbBus},
+    g_registers{8},
     pc_r{0x0000},
     g_halted{false},
     g_stopped{false}, //need to turn false if true when input is detected
     unimpl_instruction_reached{false}
 {
-    initInstructionTables();
+    initInstructionTables(); //causes infinite loop?
 }
 
 std::uint8_t GBCpu::decodeExecuteInstruction(){

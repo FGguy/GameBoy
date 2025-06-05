@@ -86,16 +86,16 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
                 cpu.setRegister(0x01, REG_H);
                 cpu.addToRegister(REG_H, 0xFF);
                 flag = cpu.getRegister(REG_F);
-                REQUIRE((flag & 0x10) == 1); //Carry
-                REQUIRE((flag & 0x20) == 0); //Half-Carry
+                REQUIRE((flag & 0x10) != 0); //Carry
+                REQUIRE((flag & 0x20) != 0); //Half-Carry
                 REQUIRE((flag & 0x40) == 0); //Subtraction
-                REQUIRE((flag & 0x80) == 1); //Zero
+                REQUIRE((flag & 0x80) != 0); //Zero
 
                 cpu.setRegister(0x0F, REG_H);
                 cpu.addToRegister(REG_H, 0x0F);
                 flag = cpu.getRegister(REG_F);
                 REQUIRE((flag & 0x10) == 0); //Carry
-                REQUIRE((flag & 0x20) == 1); //Half-Carry
+                REQUIRE((flag & 0x20) != 0); //Half-Carry
                 REQUIRE((flag & 0x40) == 0); //Subtraction
                 REQUIRE((flag & 0x80) == 0); //Zero
 
@@ -103,9 +103,9 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
                 cpu.setRegister(0x00, REG_H); //required, register are unitialized by default
                 cpu.subFromRegister(REG_H, 0x09);
                 flag = cpu.getRegister(REG_F);
-                REQUIRE((flag & 0x10) == 1); //Carry
-                REQUIRE((flag & 0x20) == 0); //Half-Carry
-                REQUIRE((flag & 0x40) == 1); //Subtraction
+                REQUIRE((flag & 0x10) != 0); //Carry
+                REQUIRE((flag & 0x20) != 0); //Half-Carry
+                REQUIRE((flag & 0x40) != 0); //Subtraction
                 REQUIRE((flag & 0x80) == 0); //Zero
 
                 cpu.setRegister(0x0F, REG_H);
@@ -113,15 +113,15 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
                 flag = cpu.getRegister(REG_F);
                 REQUIRE((flag & 0x10) == 0); //Carry
                 REQUIRE((flag & 0x20) == 0); //Half-Carry
-                REQUIRE((flag & 0x40) == 1); //Subtraction
-                REQUIRE((flag & 0x80) == 1); //Zero
+                REQUIRE((flag & 0x40) != 0); //Subtraction
+                REQUIRE((flag & 0x80) != 0); //Zero
 
                 cpu.setRegister(0x18, REG_H);
                 cpu.subFromRegister(REG_H, 0x0F);
                 flag = cpu.getRegister(REG_F);
                 REQUIRE((flag & 0x10) == 0); //Carry
-                REQUIRE((flag & 0x20) == 1); //Half-Carry
-                REQUIRE((flag & 0x40) == 1); //Subtraction
+                REQUIRE((flag & 0x20) != 0); //Half-Carry
+                REQUIRE((flag & 0x40) != 0); //Subtraction
                 REQUIRE((flag & 0x80) == 0); //Zero
             }
         }
