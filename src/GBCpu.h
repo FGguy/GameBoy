@@ -57,12 +57,13 @@ class GBCpu {
 
         //util
         std::uint16_t getRegisterPair(RegisterPairs register_pair);
+        void setRegisterPair(std::uint16_t value, RegisterPairs register_pair);
         void addToRegister(Registers reg, std::uint8_t value);
         void subFromRegister(Registers reg, std::uint8_t value);
-        void setRegisterPair(std::uint16_t value, RegisterPairs register_pair);
         std::uint8_t readR8(std::uint8_t r8);
         void writeR8(std::uint8_t value, std::uint8_t r8);
 
-        //getters
+        //setters & getters
         std::uint8_t getRegister(Registers reg);
+        void setRegister(std::uint8_t value, Registers reg);
 };

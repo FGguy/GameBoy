@@ -28,6 +28,15 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     return data.cycles;
 }
 
+//For testing
+std::uint8_t GBCpu::getRegister(Registers reg){
+    return g_registers[reg];
+}
+
+void GBCpu::setRegister(std::uint8_t value, Registers reg){
+    g_registers[reg] = value;
+}
+
 std::uint8_t GBCpu::readR8(std::uint8_t r8){
     if (r8 < 6){
         return g_registers[r8 + 2];
@@ -51,23 +60,23 @@ void GBCpu::writeR8(std::uint8_t value, std::uint8_t r8){
 }
 
 void GBCpu::addToRegister(Registers reg, std::uint8_t value){
-        if ((0xFF - g_registers[reg]) < value) { 
+        if ((0xFF - g_registers[reg]) < value) { // C: Carry, overflow?
             g_registers[REG_F] |= 0b00010000; 
         } else { 
             g_registers[REG_F] &= 0b11101111; 
         } 
-        if (((g_registers[reg] & 0x0F) + (value & 0x0F)) > 0x0F) { 
+        if (((g_registers[reg] & 0x0F) + (value & 0x0F)) > 0x0F) { //H: Half-Carry
             g_registers[REG_F] |= 0b00100000; 
         } else { 
             g_registers[REG_F] &= 0b11011111; 
         } 
         g_registers[reg] += value;
-        if (g_registers[reg] == 0){ 
+        if (g_registers[reg] == 0){ //Z: zero, result is zero?
             g_registers[REG_F] |= 0b10000000; 
         } else { 
             g_registers[REG_F] &= 0b01111111; 
         } 
-        g_registers[REG_F] &= 0b10111111; 
+        g_registers[REG_F] &= 0b10111111; //N, substraction flag
 }
 
 void GBCpu::subFromRegister(Registers reg, std::uint8_t value){
@@ -96,7 +105,11 @@ std::uint16_t GBCpu::getRegisterPair(RegisterPairs register_pair){
 }
 
 void GBCpu::setRegisterPair(std::uint16_t value, RegisterPairs register_pair){
-    g_registers[register_pair*2 + 1] = static_cast<std::uint8_t>(value & 0xFF);
+    if (register_pair*2 + 1 == REG_F){
+        g_registers[register_pair*2 + 1] = static_cast<std::uint8_t>(value & 0xF0);
+    }else{
+        g_registers[register_pair*2 + 1] = static_cast<std::uint8_t>(value & 0xFF);
+    }
     g_registers[register_pair*2] = static_cast<std::uint8_t>((value >> 8) & 0xFF);
 }
 
