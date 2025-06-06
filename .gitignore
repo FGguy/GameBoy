@@ -1,3 +1,4 @@
 /build
-*.bin
+dmg_boot.bin
 .vscode
+.vs

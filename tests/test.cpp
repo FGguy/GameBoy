@@ -47,6 +47,7 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
     std::vector<std::uint8_t> boot_rom(256 , 1);
     GBBus bus{boot_rom, cart_rom};
     GBCpu cpu{&bus};
+    cpu.initInstructionTables();
 
     SECTION("Utility methods are implemented correctly."){
         WHEN("Individual registers of a register pair are set."){
