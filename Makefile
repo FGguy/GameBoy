@@ -1,4 +1,6 @@
-tests:
+.PHONY: tests
+
+tests: build_release
 	./build/tests/Release/tests.exe
 
 gen_build: clean
