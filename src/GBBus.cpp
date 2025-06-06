@@ -17,7 +17,7 @@ GBBus::GBBus(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cart
 std::uint8_t GBBus::read(std::uint16_t address){
     if(address <= 0x7FFF){
         if(address <= 0x00FF){
-            if(!IORegisters[0x50]){ //1 Boot rom is disabled, read from cartridge, 0 boot rom is active
+            if(IORegisters[0x50] == 0){ //1 Boot rom is disabled, read from cartridge, 0 boot rom is active
                 return bootROM[address];
             }else{
                 return cartridgeROM[address];
@@ -51,7 +51,7 @@ std::uint8_t GBBus::read(std::uint16_t address){
 void GBBus::write(std::uint8_t value, std::uint16_t address){
     if(address <= 0x7FFF){
         if(address <= 0x00FF){
-            if(!IORegisters[0x50]){ //1 Boot rom is disabled, read from cartridge, 0 boot rom is active
+            if(IORegisters[0x50] == 0){ //1 Boot rom is disabled, read from cartridge, 0 boot rom is active
                 //ignore writes to boot ROM
             }else{
                 cartridgeROM[address] = value;

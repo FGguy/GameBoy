@@ -138,6 +138,7 @@ instruction_table[0x00] = {
     }
 };
 
+//ld r16, imm16
 instruction_table[0x01] = {
     [this]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
@@ -169,14 +170,15 @@ instruction_table[0x31] = {
     [this]() -> InstructionData {
         std::uint16_t val = gbBus->read(pc_r + 1);
         val |= (static_cast<std::uint16_t>(gbBus->read(pc_r + 2)) << 8);
-        setRegisterPair(val, REG_AF);
+        sp_r = val;
         return {3, 3};
     }
 };
 
+//ld [r16mem], a
 instruction_table[0x02] = {
     [this]() -> InstructionData {
-        gbBus->write(g_registers[REG_A], getRegisterPair(REG_HL));
+        gbBus->write(g_registers[REG_A], getRegisterPair(REG_BC));
         return {1, 2};
     }
 };
@@ -204,6 +206,7 @@ instruction_table[0x32] = {
     }
 };
 
+//ld a, [r16mem]
 instruction_table[0x0A] = {
     [this]() -> InstructionData {
         g_registers[REG_A] = gbBus->read(getRegisterPair(REG_BC));
@@ -234,6 +237,7 @@ instruction_table[0x3A] = {
     }
 };
 
+//ld [imm16], sp
 instruction_table[0x08] = {
     [this]() -> InstructionData {
         std::uint16_t addr = gbBus->read(pc_r + 1);
@@ -243,6 +247,7 @@ instruction_table[0x08] = {
     }
 };
 
+//inc r16
 instruction_table[0x03] = {
     [this]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_BC) + 1, REG_BC);
@@ -271,6 +276,7 @@ instruction_table[0x33] = {
     }
 };
 
+//dec r16
 instruction_table[0x0B] = {
     [this]() -> InstructionData {
         setRegisterPair(getRegisterPair(REG_BC) - 1, REG_BC);
@@ -299,129 +305,27 @@ instruction_table[0x3B] = {
     }
 };
 
+//add hl, r16
 instruction_table[0x09] = {
     [this]() -> InstructionData {
-        //lsb
-        if ((0xFF - g_registers[REG_L]) < g_registers[REG_C]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_C] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_L] += g_registers[REG_C];
-        if (g_registers[REG_L] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
-
-        //msb
-        if ((0xFF - g_registers[REG_H]) < g_registers[REG_B]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_B] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_H] += g_registers[REG_B];
-        if (g_registers[REG_H] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
+        addToRegister(REG_L, g_registers[REG_C]); //lsb
+        addToRegister(REG_H, g_registers[REG_B]); //msb
         return {1, 2};
     }
 };
 
 instruction_table[0x19] = {
     [this]() -> InstructionData {
-        if ((0xFF - g_registers[REG_L]) < g_registers[REG_E]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_E] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_L] += g_registers[REG_E];
-        if (g_registers[REG_L] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
-
-        //msb
-        if ((0xFF - g_registers[REG_H]) < g_registers[REG_D]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_D] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_H] += g_registers[REG_D];
-        if (g_registers[REG_H] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
+        addToRegister(REG_L, g_registers[REG_E]); //lsb
+        addToRegister(REG_H, g_registers[REG_D]); //msb
         return {1, 2};
     }
 };
 
 instruction_table[0x29] = {
     [this]() -> InstructionData {
-        if ((0xFF - g_registers[REG_L]) < g_registers[REG_L]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_L] & 0x0F) + (g_registers[REG_L] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_L] += g_registers[REG_L];
-        if (g_registers[REG_L] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
-
-        //msb
-        if ((0xFF - g_registers[REG_H]) < g_registers[REG_H]) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_H] & 0x0F) + (g_registers[REG_H] & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_H] += g_registers[REG_H];
-        if (g_registers[REG_H] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
+        addToRegister(REG_L, g_registers[REG_L]); //lsb
+        addToRegister(REG_H, g_registers[REG_H]); //msb
         return {1, 2};
     }
 };
@@ -430,46 +334,13 @@ instruction_table[0x39] = {
     [this]() -> InstructionData {
         std::uint8_t lsb = static_cast<std::uint8_t>(sp_r & 0x00FF);
         std::uint8_t msb = static_cast<std::uint8_t>(sp_r >> 8);
-        if ((0xFF - g_registers[REG_L]) < lsb) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_L] & 0x0F) + (lsb & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_L] += lsb;
-        if (g_registers[REG_L] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
-
-        //msb
-        if ((0xFF - g_registers[REG_H]) < msb) { 
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[REG_H] & 0x0F) + (msb & 0x0F)) > 0x0F) { 
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[REG_H] += msb;
-        if (g_registers[REG_H] == 0){ 
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; 
+        addToRegister(REG_L, lsb); //lsb
+        addToRegister(REG_H, msb); //msb
         return {1, 2};
     }
 };
 
+//inc r8
 instruction_table[0x04] = {
     [this]() -> InstructionData {
         addToRegister(REG_B, 1);
@@ -736,6 +607,7 @@ instruction_table[0x20] = {
         if(g_registers[REG_F] & 0b00010000){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+            return {0, 2};
         }
         return {0, 3}; //length 2
     }
@@ -746,6 +618,7 @@ instruction_table[0x28] = {
         if(!(g_registers[REG_F] & 0b00010000)){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+            return {0, 2};
         }
         return {0, 3}; //length 2
     }
@@ -756,6 +629,7 @@ instruction_table[0x30] = {
         if(g_registers[REG_F] & 0b10000000){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+            return {0, 2};
         }
         return {0, 3}; //length 2
     }
@@ -766,6 +640,7 @@ instruction_table[0x38] = {
         if(!(g_registers[REG_F] & 0b10000000)){
             std::int8_t e = gbBus->read(pc_r + 1);
             pc_r = static_cast<std::uint16_t>((std::int32_t)pc_r + (std::int32_t)e);
+            return {0, 2};
         }
         return {0, 3}; //length 2
     }
@@ -774,7 +649,7 @@ instruction_table[0x38] = {
 instruction_table[0x10] = {
     [this]() -> InstructionData {
         g_stopped = true;
-        return {2, 1};
+        return {1, 1}; //appears as two bytes but is one
     }
 };
 
@@ -909,7 +784,7 @@ instruction_table[0x2E] = {
 instruction_table[0x36] = {
     [this]() -> InstructionData {
         gbBus->write(gbBus->read(pc_r + 1), getRegisterPair(REG_HL));
-        return {2, 2};
+        return {2, 3};
     }
 };
 

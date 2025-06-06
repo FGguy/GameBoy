@@ -127,4 +127,25 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
             }
         }
     }
+
+    SECTION("Instructions are implemented correctly"){
+        bus.write(0x01, 0xFF50); //disable boot rom
+
+        //NOP
+        bus.write(0x00, 0x0000);
+
+        //ld r16, imm16
+        bus.write(0x01, 0x0001);
+        bus.write(0x12, 0x0002);
+        bus.write(0x34, 0x0003);
+
+        //NOP
+        std::uint8_t cycles = cpu.decodeExecuteInstruction();
+        REQUIRE(cycles == 1);
+
+        //ld r16, imm16
+        cycles = cpu.decodeExecuteInstruction();
+        REQUIRE(cycles == 3);
+        REQUIRE(cpu.getRegisterPair(REG_BC) == 0x3412);
+    }
 }
