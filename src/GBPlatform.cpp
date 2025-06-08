@@ -32,7 +32,14 @@ int GBPlatform::BootAndExecute(){
         return 1;
     }
 
-    gbBus.write(0x00, 0xFF50); //enabled boot rom
+    gbBus.write(0x00, BOOTLOCK_ADDR); //enabled boot rom
+    GBCpu gbCpu{&gbBus};
+
+    // while(true){
+    //     gbCpu.decodeExecuteInstruction();
+    //     gbCpu.handleInterrupts();
+    //     //increment timers 
+    // }
 
 
     //cleanup

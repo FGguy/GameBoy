@@ -22,6 +22,14 @@ enum Registers {
     REG_L
 };
 
+enum InterruptSource {
+    VBlank,
+    LCD,
+    Timer,
+    Serial,
+    Joypad
+};
+
 struct InstructionData {
     uint8_t length;
     uint8_t cycles;
@@ -47,6 +55,8 @@ class GBCpu {
         Instruction instruction_table[256];
         Instruction cb_instruction_table[256];
 
+        std::uint16_t jump_vectors[5] = {0x0040, 0x0048, 0x0050, 0x0058, 0x0060};
+
         GBBus* gbBus;
 
     public:
@@ -54,6 +64,7 @@ class GBCpu {
         void initInstructionTables();
         std::uint8_t decodeExecuteInstruction();
         std::uint8_t handleInterrupts();
+        void requestInterrupt(InterruptSource interrupt);
 
         //util
         std::uint16_t getRegisterPair(RegisterPairs register_pair);

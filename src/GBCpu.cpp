@@ -29,6 +29,35 @@ std::uint8_t GBCpu::decodeExecuteInstruction(){
     return data.cycles;
 }
 
+std::uint8_t GBCpu::handleInterrupts(){
+    if(ime_r){
+        std::uint8_t interruptQueue = gbBus->read(IF_ADDR) & gbBus->read(IE_ADDR);
+        std::uint8_t bitmask = 0b00000001;
+        for(int i = 0; i < 5; i++){
+            if((bitmask & interruptQueue)){
+                //push pc to stack
+                ime_r = 0; //disable interrupts
+                gbBus->write(gbBus->read(IF_ADDR) & ~bitmask, IF_ADDR); //flip bit of the interrupt being serviced
+
+                //push pc to stack
+                gbBus->write(static_cast<std::uint8_t>(pc_r >> 8), --sp_r); //msb
+                gbBus->write(static_cast<std::uint8_t>(pc_r), --sp_r); //lsb
+                pc_r = jump_vectors[i]; //load appropriate jump vector
+                return 5;
+            }
+            bitmask = bitmask << 1;
+        }
+        return 0; //no valid interrupts in queues
+    } else {
+        return 0;
+    }
+}
+
+void GBCpu::requestInterrupt(InterruptSource interrupt){
+    std::uint8_t bitmask = 0b00000001 << interrupt;
+    gbBus->write(gbBus->read(IF_ADDR) | bitmask, IF_ADDR);
+}
+
 //For testing
 std::uint8_t GBCpu::getRegister(Registers reg){
     return g_registers[reg];
@@ -127,8 +156,6 @@ for(int i = 0; i < 256; i++){
     instruction_table[i] = NonImplemented;
     cb_instruction_table[i] = NonImplemented;
 }
-
-
 
 #pragma region Block_1
 
@@ -654,7 +681,6 @@ instruction_table[0x10] = {
 };
 
 #pragma endregion
-
 
 //LD r, r' Load Instructions
 #pragma region LD_R_R

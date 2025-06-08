@@ -1,6 +1,10 @@
 #pragma once
 #include <vector>
 
+#define IE_ADDR 0xFFFF
+#define IF_ADDR 0xFF0F
+#define BOOTLOCK_ADDR 0xFF50
+
 /*
 TODO:
     - Reads to IO registers

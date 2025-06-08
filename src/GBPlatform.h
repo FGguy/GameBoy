@@ -1,5 +1,6 @@
 #pragma once
 #include <GBBus.h>
+#include <GBCpu.h>
 #include <SDL.h>
 
 #include <vector>
