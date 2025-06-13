@@ -10,6 +10,12 @@ class GBPlatform {
         std::vector<std::uint8_t> bootROM;
         std::vector<std::uint8_t> cartridgeROM;
 
+        //Timers
+        std::uint32_t vblank_timer{0};
+        std::uint32_t lcd_timer{0};
+        std::uint32_t tima_timer{0};
+        std::uint32_t div_timer{0};
+
         //IO 
         std::uint8_t b_up;
         std::uint8_t b_down;
@@ -31,4 +37,5 @@ class GBPlatform {
         GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
         int BootAndExecute();
         void ProcessInputs();
+        void IncrementTimers(std::uint16_t cycles, GBCpu& gbCpu);
 };

@@ -1,9 +1,15 @@
 #pragma once
 #include <vector>
 
+#define LCDC_ADDR 0xFF40
 #define IE_ADDR 0xFFFF
 #define IF_ADDR 0xFF0F
 #define BOOTLOCK_ADDR 0xFF50
+#define DIV_ADDR 0xFF04
+#define TIMA_ADDR 0xFF05
+#define TMA_ADDR 0xFF06
+#define TAC_ADDR 0xFF07
+
 
 /*
 TODO:
