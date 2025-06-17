@@ -9,7 +9,7 @@ GBCpu::GBCpu(GBBus* gbBus):
     g_stopped{false}, //need to turn false if true when input is detected
     unimpl_instruction_reached{false}
 {
-    //initInstructionTables(); //causes infinite loop?
+    initInstructionTables(); //causes infinite loop?
 }
 
 std::uint8_t GBCpu::decodeExecuteInstruction(){

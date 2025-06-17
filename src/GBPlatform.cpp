@@ -6,10 +6,20 @@ TODO:
     - instanciate cpu bus ppu and other in the constructor
 */
 
+/*
+    4 dots = 1 single speed M-cycle
+
+    Mode 2 search OBJs 80 dots
+    Mode 3 send pixels to the LCD between 172 and 289 dots
+    Mode 0 Wait until the end of the scanline 376 - mode 3s duration
+    Mode 1 waiting until the next frame 4560 duration
+*/
+
 GBPlatform::GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM):
     bootROM{bootROM},
     cartridgeROM{cartridgeROM},
-    gbBus{bootROM, cartridgeROM}
+    gbBus{bootROM, cartridgeROM},
+    gbCpu{&gbBus}
 {
 }
 
@@ -33,20 +43,19 @@ int GBPlatform::BootAndExecute(){
     }
 
     gbBus.write(0x00, BOOTLOCK_ADDR); //enabled boot rom
-    GBCpu gbCpu{&gbBus};
 
-    //VBLANK 59.7 times/s
-    //STAT/LCD
-    //TIMER everytime the timer overflows
-    //Serial will not be implemented
-    //JOYPAD anytime one of the bits in P1 changes
+    //VBLANK 59.7 times/s DONE
+    //STAT/LCD 
+    //TIMER everytime the timer overflows DONE
+    //Serial will not be implemented TECHNICALLY DONE
+    //JOYPAD anytime one of the bits in P1 changes DONE
 
     while(true){
         std::uint16_t cycles{0};
         cycles += gbCpu.decodeExecuteInstruction();
         cycles += gbCpu.handleInterrupts();
-        IncrementTimers(cycles, gbCpu);
-
+        IncrementTimers(cycles);
+        ProcessInputs();
         //increment timers 
     }
 
@@ -59,7 +68,7 @@ int GBPlatform::BootAndExecute(){
 }
 
 //uses M-cycles 1.048576 MHz
-inline void GBPlatform::IncrementTimers(std::uint16_t cycles, GBCpu& gbCpu){
+inline void GBPlatform::IncrementTimers(std::uint16_t cycles){
     vblank_timer += cycles; //59.7 times a sec, every 17564 M-Cycles
     if (vblank_timer >= 17564){
         gbCpu.requestInterrupt(VBlank);
@@ -147,6 +156,8 @@ void GBPlatform::ProcessInputs(){
                         b_start = 0;
                         break;
                 }
+            //request interrupt 
+            gbCpu.requestInterrupt(Joypad);
             } break;
             case SDL_KEYUP: {
                 switch (event.key.keysym.sym){
@@ -177,5 +188,11 @@ void GBPlatform::ProcessInputs(){
                 }
             } break;
         }
+    }
+    //map new inputs to IO register and request interrupt
+    if((~gbBus.read(JOYP_ADDR) & 0b00010000)){ //d-pad
+        gbBus.write((0b00100000 | b_down << 3 | b_up << 2 | b_left << 1 | b_right), JOYP_ADDR);
+    } else if((~gbBus.read(JOYP_ADDR) & 0b00100000)){ // select buttons
+        gbBus.write((0b00010000 | b_start << 3 | b_select << 2 | b_B << 1 | b_A), JOYP_ADDR);
     }
 }

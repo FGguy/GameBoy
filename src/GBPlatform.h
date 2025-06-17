@@ -28,6 +28,7 @@ class GBPlatform {
 
         //CPU
         GBBus gbBus;
+        GBCpu gbCpu;
         //PPU
 
         SDL_Window* gbWindow;
@@ -37,5 +38,5 @@ class GBPlatform {
         GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
         int BootAndExecute();
         void ProcessInputs();
-        void IncrementTimers(std::uint16_t cycles, GBCpu& gbCpu);
+        void IncrementTimers(std::uint16_t cycles);
 };
