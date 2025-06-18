@@ -1,25 +1,12 @@
 #include <GBPlatform.h>
 
-/*
-TODO:
-    - Change screen width and height 
-    - instanciate cpu bus ppu and other in the constructor
-*/
-
-/*
-    4 dots = 1 single speed M-cycle
-
-    Mode 2 search OBJs 80 dots
-    Mode 3 send pixels to the LCD between 172 and 289 dots
-    Mode 0 Wait until the end of the scanline 376 - mode 3s duration
-    Mode 1 waiting until the next frame 4560 duration
-*/
-
 GBPlatform::GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM):
     bootROM{bootROM},
     cartridgeROM{cartridgeROM},
     gbBus{bootROM, cartridgeROM},
-    gbCpu{&gbBus}
+    gbCpu{&gbBus},
+    GBPpu{&gbBus},
+    quit{false}
 {
 }
 
@@ -50,7 +37,7 @@ int GBPlatform::BootAndExecute(){
     //Serial will not be implemented TECHNICALLY DONE
     //JOYPAD anytime one of the bits in P1 changes DONE
 
-    while(true){
+    while(!quit){
         std::uint16_t cycles{0};
         cycles += gbCpu.decodeExecuteInstruction();
         cycles += gbCpu.handleInterrupts();
@@ -73,6 +60,7 @@ inline void GBPlatform::IncrementTimers(std::uint16_t cycles){
     if (vblank_timer >= 17564){
         gbCpu.requestInterrupt(VBlank);
         vblank_timer = 0;
+        RenderFrame();
     }
     lcd_timer += cycles;
     
@@ -127,7 +115,7 @@ void GBPlatform::ProcessInputs(){
     while (SDL_PollEvent(&event)){
         switch (event.type){
             case SDL_QUIT: {
-                //TODO make the program quit
+                quit = true;
             } break;
             case SDL_KEYDOWN: {
                 switch (event.key.keysym.sym){
@@ -195,4 +183,10 @@ void GBPlatform::ProcessInputs(){
     } else if((~gbBus.read(JOYP_ADDR) & 0b00100000)){ // select buttons
         gbBus.write((0b00010000 | b_start << 3 | b_select << 2 | b_B << 1 | b_A), JOYP_ADDR);
     }
+}
+
+void GBPlatform::RenderFrame(){
+    /*
+        TODO: From pixel matrix in PPU, render a frame and display it using SDL
+    */
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <GBBus.h>
 #include <GBCpu.h>
+#include <GBPpu.h>
 #include <SDL.h>
 
 #include <vector>
@@ -26,17 +27,20 @@ class GBPlatform {
         std::uint8_t b_select;
         std::uint8_t b_start;
 
-        //CPU
+        //hardware
         GBBus gbBus;
         GBCpu gbCpu;
-        //PPU
+        GBPpu GBPpu;
 
         SDL_Window* gbWindow;
         SDL_Renderer* gbRenderer;
+
+        bool quit;
 
     public:
         GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
         int BootAndExecute();
         void ProcessInputs();
         void IncrementTimers(std::uint16_t cycles);
+        void RenderFrame();
 };
