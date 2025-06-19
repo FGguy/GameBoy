@@ -63,10 +63,21 @@ struct Sprite {
     }
 };
 
+enum PpuMode {
+    OAM_SCAN = 2,
+    DRAWING = 3,
+    HBLANK = 0,
+    VBLANK = 1
+};
+
 class GBPpu {
     private:
         std::vector<Sprite> sprite_buffer;
         uint32_t ppu_timer;
+        uint32_t ppu_timer_delta;
+        PpuMode mode;
+        bool waiting;
+        uint8_t drawing_penalty;
 
         GBBus* gbBus;
     public:
@@ -74,4 +85,5 @@ class GBPpu {
         GBPpu(GBBus* gbBus);
         std::vector<uint8_t> FetchTile(uint8_t tile_index, bool isSprite);
         void UpdateTimer(uint8_t cycles);
+        void ChangeModes(PpuMode mode);
 };
