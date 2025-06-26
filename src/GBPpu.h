@@ -77,6 +77,7 @@ class GBPpu {
         uint32_t ppu_timer_delta;
         PpuMode mode;
         bool waiting;
+        bool stat_blocking;
         uint8_t drawing_penalty;
 
         GBBus* gbBus;
@@ -86,4 +87,5 @@ class GBPpu {
         std::vector<uint8_t> FetchTile(uint8_t tile_index, bool isSprite);
         void UpdateTimer(uint8_t cycles);
         void ChangeModes(PpuMode mode);
+        bool CheckCondition(PpuMode mode);
 };

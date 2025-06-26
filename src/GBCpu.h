@@ -24,7 +24,7 @@ enum Registers {
 
 enum InterruptSource {
     VBlank,
-    LCD,
+    LCD_STAT,
     Timer,
     Serial,
     Joypad

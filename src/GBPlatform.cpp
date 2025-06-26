@@ -5,7 +5,7 @@ GBPlatform::GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint
     cartridgeROM{cartridgeROM},
     gbBus{bootROM, cartridgeROM},
     gbCpu{&gbBus},
-    GBPpu{&gbBus},
+    gbPpu{&gbBus},
     quit{false}
 {
 }
@@ -41,11 +41,10 @@ int GBPlatform::BootAndExecute(){
         std::uint16_t cycles{0};
         cycles += gbCpu.decodeExecuteInstruction();
         cycles += gbCpu.handleInterrupts();
-        IncrementTimers(cycles);
+        gbPpu.UpdateTimer(cycles);
+        UpdateTimers(cycles);
         ProcessInputs();
-        //increment timers 
     }
-
 
     //cleanup
     SDL_DestroyRenderer(gbRenderer);
@@ -55,7 +54,7 @@ int GBPlatform::BootAndExecute(){
 }
 
 //uses M-cycles 1.048576 MHz
-inline void GBPlatform::IncrementTimers(std::uint16_t cycles){
+inline void GBPlatform::UpdateTimers(std::uint16_t cycles){
     vblank_timer += cycles; //59.7 times a sec, every 17564 M-Cycles
     if (vblank_timer >= 17564){
         gbCpu.requestInterrupt(VBlank);
