@@ -1,7 +1,6 @@
 #include <GBPpu.h>
 
 /*
-TODO: interrupts dispatching logic, STAT blocking
 TODO: The actual graphical rendering pipeline lol
 
 bits 6-3 are used to enable interrupts caused by a transition to a certain mode
@@ -46,7 +45,17 @@ void GBPpu::UpdateTimer(uint8_t cycles){
     switch(mode){
         case PpuMode::OAM_SCAN:
             if(!waiting){
-                //execute OAM scan
+                sprite_buffer.clear();
+                uint8_t ly = gbBus->read(LY_ADDR);
+                uint8_t obj_size = (gbBus->read(LCDC_ADDR) & 0b00000100)? 16 : 8;
+                uint16_t oam_index = 0xFE00;
+                while(oam_index < 0xFE9F && sprite_buffer.size() < 10){
+                    Sprite sprite = LoadSprite(oam_index);
+                    if(sprite.x_pos > 0 && (ly + 16 >= sprite.y_pos) && (ly + 16 <= sprite.y_pos + obj_size)){
+                        sprite_buffer.push_back(sprite);
+                    }
+                    oam_index += 4; //go to next entry
+                }
                 waiting = true;
             } else if(ppu_timer >= 80){
                 ChangeModes(PpuMode::DRAWING);
@@ -132,4 +141,13 @@ bool GBPpu::CheckCondition(PpuMode mode){
         return false;
         break;
     }
+}
+
+Sprite GBPpu::LoadSprite(uint16_t addr){
+    return {
+        gbBus->read(addr), //y_pos
+        gbBus->read(addr + 1), //x_pos
+        gbBus->read(addr + 2), //tile_index
+        gbBus->read(addr + 3), //flags
+    };
 }

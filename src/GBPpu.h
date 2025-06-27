@@ -88,4 +88,5 @@ class GBPpu {
         void UpdateTimer(uint8_t cycles);
         void ChangeModes(PpuMode mode);
         bool CheckCondition(PpuMode mode);
+        Sprite LoadSprite(uint16_t addr);
 };
