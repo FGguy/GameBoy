@@ -42,7 +42,7 @@
 #define ADC_A_R(opcode, dst, length, cycles) \
     instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;\
+            uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;\
             if ((0xFF - g_registers[REG_A]) < (g_registers[REG_##dst] + carry)) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -91,7 +91,7 @@
 #define SBC_A_R(opcode, dst, length, cycles) \
     instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;\
+            uint8_t carry = (g_registers[REG_F] & 0b00010000) >> 4;\
             if (g_registers[REG_A] < (g_registers[REG_##dst] + carry)) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -191,7 +191,7 @@
 #define RLC_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] >> 7; \
+            uint8_t carry = g_registers[REG_##dst] >> 7; \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -207,7 +207,7 @@
 #define RRC_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] << 7; \
+            uint8_t carry = g_registers[REG_##dst] << 7; \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -222,7 +222,7 @@
 #define RL_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] >> 7; \
+            uint8_t carry = g_registers[REG_##dst] >> 7; \
             g_registers[REG_##dst] = (g_registers[REG_##dst] << 1) | ((g_registers[REG_F] >> 4) & 0x01); \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
@@ -238,7 +238,7 @@
 #define RR_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] << 7; \
+            uint8_t carry = g_registers[REG_##dst] << 7; \
             g_registers[REG_##dst] = (g_registers[REG_##dst] >> 1) | ((g_registers[REG_F] << 3) & 0x80); \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
@@ -252,7 +252,7 @@
 #define SLA_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] >> 7; \
+            uint8_t carry = g_registers[REG_##dst] >> 7; \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -272,7 +272,7 @@
 #define SRA_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] << 7; \
+            uint8_t carry = g_registers[REG_##dst] << 7; \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \
@@ -292,8 +292,8 @@
 #define SWAP_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t higher_n = g_registers[REG_##dst] << 4; \
-            std::uint8_t lower_n = g_registers[REG_##dst] >> 4; \
+            uint8_t higher_n = g_registers[REG_##dst] << 4; \
+            uint8_t lower_n = g_registers[REG_##dst] >> 4; \
             g_registers[REG_##dst] = higher_n | lower_n; \
             if(!g_registers[REG_##dst]){ \
                 g_registers[REG_F] |= 0b10000000; \
@@ -308,7 +308,7 @@
 #define SRL_R8(opcode, dst, length, cycles) \
     cb_instruction_table[opcode] = { \
         [this]() -> InstructionData { \
-            std::uint8_t carry = g_registers[REG_##dst] << 7; \
+            uint8_t carry = g_registers[REG_##dst] << 7; \
             if (carry) { \
                 g_registers[REG_F] |= 0b00010000; \
             } else { \

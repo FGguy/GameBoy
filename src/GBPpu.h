@@ -2,6 +2,7 @@
 #include <GBBus.h>
 
 #include <vector>
+#include <queue>
 
 /*
     Tiles: 8x8 pixels, each pixel is 2 bits so each tiles is 16 bytes
@@ -12,15 +13,15 @@
     Viewport is defined using scroll registers SCX & SCY
     Window is also 32x32 tiles
     Overlay position is defined by registers WX & WY 
-    The VRAM sections $9800-$9BFF and $9C00-$9FFF each contain a background map
+    The v_ram sections $9800-$9BFF and $9C00-$9FFF each contain a background map
 
-    Sprites are 1 tile and are stored their data is stored in OAM
+    Sprites are 1 tile and are stored their data is stored in obj_attribute_mem
     byte 0: Y-position
     byte 1: X-position
     byte 2: Tile Number (always 8000 addressing method)
     byte 3: sprite flags
 
-    Tiles are stored within regions of VRAM and are indexed using different methods 
+    Tiles are stored within regions of v_ram and are indexed using different methods 
     depending on bit 4 of the LCDC register which sets the addressing mode
 
     The PPU operates on scanlines, there is 154 scanlines (144 actual + 10 Vblank)
@@ -29,8 +30,8 @@
     4 modes:
     *each the PPU changes mode, the lower two bits of the STAT register are updated. 
 
-    OAM Scan (Mode 2) 80 T-cycles:
-        entered at the beginning of every scanline, PPU scans OAM for sprites to render.
+    obj_attribute_mem Scan (Mode 2) 80 T-cycles:
+        entered at the beginning of every scanline, PPU scans obj_attribute_mem for sprites to render.
         Sprites to be rendered are added to a buffer.
     
     Drawing (Mode 3) 172 - 289 T-cycles:
@@ -41,8 +42,14 @@
 
     Vblank (Mode 1) 456 T-cycles X 10:
         PPU does not do any work during this time
-        CPU can access VRAM
+        CPU can access v_ram
 */
+enum PpuMode {
+    obj_attribute_mem_SCAN = 2,
+    DRAWING = 3,
+    HBLANK = 0,
+    VBLANK = 1
+};
 
 enum SpriteFlags {
     PALETTE = 0,
@@ -63,16 +70,19 @@ struct Sprite {
     }
 };
 
-enum PpuMode {
-    OAM_SCAN = 2,
-    DRAWING = 3,
-    HBLANK = 0,
-    VBLANK = 1
+struct Pixel {
+    uint8_t color;
+    uint8_t palette;
+    uint8_t bg_priority;
 };
 
 class GBPpu {
     private:
         std::vector<Sprite> sprite_buffer;
+        std::queue<Pixel> sprite_FIFO;
+        std::queue<Pixel> background_FIFO;
+        std::vector<Pixel> display_buffer;
+
         uint32_t ppu_timer;
         uint32_t ppu_timer_delta;
         PpuMode mode;
@@ -84,9 +94,10 @@ class GBPpu {
     public:
         //matrix for pixels
         GBPpu(GBBus* gbBus);
-        std::vector<uint8_t> FetchTile(uint8_t tile_index, bool isSprite);
-        void UpdateTimer(uint8_t cycles);
-        void ChangeModes(PpuMode mode);
-        bool CheckCondition(PpuMode mode);
-        Sprite LoadSprite(uint16_t addr);
+        std::vector<uint8_t> fetchTile(uint8_t tile_index, bool isSprite);
+        void updateTimer(uint8_t cycles);
+        void changeModes(PpuMode mode);
+        bool checkCondition(PpuMode mode);
+        void drawingMode();
+        Sprite loadSprite(uint16_t addr);
 };

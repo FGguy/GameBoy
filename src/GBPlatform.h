@@ -8,8 +8,8 @@
 
 class GBPlatform {
     private:
-        std::vector<std::uint8_t> bootROM;
-        std::vector<std::uint8_t> cartridgeROM;
+        std::vector<uint8_t> boot_ROM;
+        std::vector<uint8_t> cartridge_ROM;
 
         //Timers
         std::uint32_t vblank_timer{0};
@@ -18,14 +18,14 @@ class GBPlatform {
         std::uint32_t div_timer{0};
 
         //IO 
-        std::uint8_t b_up;
-        std::uint8_t b_down;
-        std::uint8_t b_left;
-        std::uint8_t b_right;
-        std::uint8_t b_B;
-        std::uint8_t b_A;
-        std::uint8_t b_select;
-        std::uint8_t b_start;
+        uint8_t b_up;
+        uint8_t b_down;
+        uint8_t b_left;
+        uint8_t b_right;
+        uint8_t b_B;
+        uint8_t b_A;
+        uint8_t b_select;
+        uint8_t b_start;
 
         //hardware
         GBBus gbBus;
@@ -38,9 +38,9 @@ class GBPlatform {
         bool quit;
 
     public:
-        GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
-        int BootAndExecute();
-        void ProcessInputs();
-        void UpdateTimers(std::uint16_t cycles);
+        GBPlatform(std::vector<uint8_t>& boot_ROM, std::vector<uint8_t>& cartridge_ROM);
+        int bootAndExecute();
+        void processInputs();
+        void UpdateTimers(uint16_t cycles);
         void RenderFrame();
 };

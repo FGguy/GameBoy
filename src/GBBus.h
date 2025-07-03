@@ -19,35 +19,28 @@
 #define LYC_ADDR 0xFF45
 #define WY_ADDR 0xFF4A
 #define WX_ADDR 0xFF4B
-#define DMA_ADDR 0xFF46 //writing to this starts OAM DMA, lasts 160 M-cycles, bus is blocked for cpu, ppu cant read OAM
+#define DMA_ADDR 0xFF46 //writing to this starts obj_attribute_mem DMA, lasts 160 M-cycles, bus is blocked for cpu, ppu cant read obj_attribute_mem
 #define BGP_ADDR 0xFF47
 #define OBP0_ADDR 0xFF48
 #define OBP1_ADDR 0xFF49
 
-
-/*
-TODO:
-    - Reads to IO registers
-    - Timers and other special register between FF00 - FF7F
-*/
-
 class GBBus{
     private:
-        std::vector<std::uint8_t> bootROM; //0000 - 00FF
-        std::vector<std::uint8_t> cartridgeROM; //0000 - 3FFF fixed, 4000 - 7FFF switchable. Will probably need to create cartridge class to hide mapper from bus
+        std::vector<uint8_t> boot_ROM; //0000 - 00FF
+        std::vector<uint8_t> cartridge_ROM; //0000 - 3FFF fixed, 4000 - 7FFF switchable. Will probably need to create cartridge class to hide mapper from bus
 
-        std::vector<std::uint8_t> vRam; //8000 - 9FFF
-        std::vector<std::uint8_t> extRam; //A000 - BFFF
-        std::vector<std::uint8_t> wRam; //C000 - DFFF
-        std::vector<std::uint8_t> echoRam; //E000 - FDFF
-        std::vector<std::uint8_t> OAM; //FE00 - FE9F
-        std::vector<std::uint8_t> hRam; //FE00 - FE9F
-        std::vector<std::uint8_t> IORegisters; //FF00 - FF7F
+        std::vector<uint8_t> v_ram; //8000 - 9FFF
+        std::vector<uint8_t> ext_ram; //A000 - BFFF
+        std::vector<uint8_t> w_ram; //C000 - DFFF
+        std::vector<uint8_t> echo_ram; //E000 - FDFF
+        std::vector<uint8_t> obj_attribute_mem; //FE00 - FE9F
+        std::vector<uint8_t> h_ram; //FE00 - FE9F
+        std::vector<uint8_t> io_registers; //FF00 - FF7F
 
-        std::uint8_t ieRegister; //FFFF
+        uint8_t ie_register; //FFFF
 
     public:
-        GBBus(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM);
-        std::uint8_t read(std::uint16_t address);
-        void write(std::uint8_t value, std::uint16_t address);
+        GBBus(std::vector<uint8_t>& boot_ROM, std::vector<uint8_t>& cartridge_ROM);
+        uint8_t read(uint16_t address);
+        void write(uint8_t value, uint16_t address);
 };

@@ -1,16 +1,16 @@
 #include <GBPlatform.h>
 
-GBPlatform::GBPlatform(std::vector<std::uint8_t>& bootROM, std::vector<std::uint8_t>& cartridgeROM):
-    bootROM{bootROM},
-    cartridgeROM{cartridgeROM},
-    gbBus{bootROM, cartridgeROM},
+GBPlatform::GBPlatform(std::vector<uint8_t>& boot_ROM, std::vector<uint8_t>& cartridge_ROM):
+    boot_ROM{boot_ROM},
+    cartridge_ROM{cartridge_ROM},
+    gbBus{boot_ROM, cartridge_ROM},
     gbCpu{&gbBus},
     gbPpu{&gbBus},
     quit{false}
 {
 }
 
-int GBPlatform::BootAndExecute(){
+int GBPlatform::bootAndExecute(){
     //start window setup
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
         return 1;
@@ -38,12 +38,12 @@ int GBPlatform::BootAndExecute(){
     //JOYPAD anytime one of the bits in P1 changes DONE
 
     while(!quit){
-        std::uint16_t cycles{0};
+        uint16_t cycles{0};
         cycles += gbCpu.decodeExecuteInstruction();
         cycles += gbCpu.handleInterrupts();
-        gbPpu.UpdateTimer(cycles);
+        gbPpu.updateTimer(cycles);
         UpdateTimers(cycles);
-        ProcessInputs();
+        processInputs();
     }
 
     //cleanup
@@ -54,7 +54,7 @@ int GBPlatform::BootAndExecute(){
 }
 
 //uses M-cycles 1.048576 MHz
-inline void GBPlatform::UpdateTimers(std::uint16_t cycles){
+inline void GBPlatform::UpdateTimers(uint16_t cycles){
     vblank_timer += cycles; //59.7 times a sec, every 17564 M-Cycles
     if (vblank_timer >= 17564){
         gbCpu.requestInterrupt(VBlank);
@@ -63,10 +63,10 @@ inline void GBPlatform::UpdateTimers(std::uint16_t cycles){
     }
     lcd_timer += cycles;
     
-    std::uint8_t tac = gbBus.read(TAC_ADDR);
+    uint8_t tac = gbBus.read(TAC_ADDR);
     if(tac & 0b00000100){
         tima_timer += cycles; //incremented based on tac reg 00: 4096M, 01: 262144M, 10: 65536M 11: 16384, bit 2 is checked to see if timer is enabled, is reset to TMA value
-        std::uint8_t tma = gbBus.read(TMA_ADDR);
+        uint8_t tma = gbBus.read(TMA_ADDR);
         switch (tac & 0b00000011)
         {
         case 0b00000000:
@@ -109,7 +109,7 @@ inline void GBPlatform::UpdateTimers(std::uint16_t cycles){
     gbBus.write(gbBus.read(DIV_ADDR) + 1,DIV_ADDR);
 }
 
-void GBPlatform::ProcessInputs(){
+void GBPlatform::processInputs(){
     SDL_Event event;
     while (SDL_PollEvent(&event)){
         switch (event.type){

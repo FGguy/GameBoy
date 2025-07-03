@@ -2,6 +2,7 @@
 
 /*
 TODO: The actual graphical rendering pipeline lol
+TODO: obj_attribute_mem DMA transfers
 
 bits 6-3 are used to enable interrupts caused by a transition to a certain mode
 STAT interrupt only caused by rising edge on interrupt line
@@ -18,6 +19,11 @@ set stat_blocking to true
 
 stat_blocking to set to false by a check that evaluates to false
 
+Drawing:
+    Pixel buffer for screen stored in PPU
+    2 queues for sprites and background
+    push pixels to buffer in drawing
+    draw frame during Vblank and clear buffer
 
 */
 
@@ -26,47 +32,47 @@ GBPpu::GBPpu(GBBus* gbBus):
     sprite_buffer(10),
     ppu_timer{0},
     ppu_timer_delta{0},
-    mode{PpuMode::OAM_SCAN},
+    mode{PpuMode::obj_attribute_mem_SCAN},
     waiting{false},
     stat_blocking{false},
     drawing_penalty{0}
 {
 }
 
-void GBPpu::UpdateTimer(uint8_t cycles){
+void GBPpu::updateTimer(uint8_t cycles){
     if(gbBus->read(LCDC_ADDR) & 0b10000000){ //PPU is disabled
         waiting = false;
         ppu_timer = 0;
         ppu_timer_delta = 0;
-        mode = OAM_SCAN;
+        mode = obj_attribute_mem_SCAN;
         return;
     }
     ppu_timer += cycles;
     switch(mode){
-        case PpuMode::OAM_SCAN:
+        case PpuMode::obj_attribute_mem_SCAN:
             if(!waiting){
                 sprite_buffer.clear();
                 uint8_t ly = gbBus->read(LY_ADDR);
                 uint8_t obj_size = (gbBus->read(LCDC_ADDR) & 0b00000100)? 16 : 8;
-                uint16_t oam_index = 0xFE00;
-                while(oam_index < 0xFE9F && sprite_buffer.size() < 10){
-                    Sprite sprite = LoadSprite(oam_index);
+                uint16_t obj_attribute_mem_index = 0xFE00;
+                while(obj_attribute_mem_index < 0xFE9F && sprite_buffer.size() < 10){
+                    Sprite sprite = loadSprite(obj_attribute_mem_index);
                     if(sprite.x_pos > 0 && (ly + 16 >= sprite.y_pos) && (ly + 16 <= sprite.y_pos + obj_size)){
                         sprite_buffer.push_back(sprite);
                     }
-                    oam_index += 4; //go to next entry
+                    obj_attribute_mem_index += 4; //go to next entry
                 }
                 waiting = true;
             } else if(ppu_timer >= 80){
-                ChangeModes(PpuMode::DRAWING);
+                changeModes(PpuMode::DRAWING);
             }
             break;
         case PpuMode::DRAWING:
             if(!waiting){
-                //execute Draw to Line
+                drawingMode();
                 waiting = true;
             } else if(ppu_timer >= 172 + drawing_penalty){
-                ChangeModes(PpuMode::HBLANK);
+                changeModes(PpuMode::HBLANK);
             }
             break;
         case PpuMode::HBLANK:
@@ -76,17 +82,17 @@ void GBPpu::UpdateTimer(uint8_t cycles){
             } else if(ppu_timer >= 204 - drawing_penalty){
                 uint8_t ly = gbBus->read(LY_ADDR);
                 if(ly < 144){
-                    ChangeModes(PpuMode::OAM_SCAN);
+                    changeModes(PpuMode::obj_attribute_mem_SCAN);
                     gbBus->write(ly + 1, LY_ADDR);
                 } else {
-                    ChangeModes(PpuMode::VBLANK);
+                    changeModes(PpuMode::VBLANK);
                 }
             }
             break;
         case PpuMode::VBLANK:
             ppu_timer_delta += cycles;
             if(ppu_timer >= 4560){
-                ChangeModes(PpuMode::OAM_SCAN);
+                changeModes(PpuMode::obj_attribute_mem_SCAN);
                 gbBus->write(0, LY_ADDR);
                 ppu_timer_delta = 0;
             } else if(ppu_timer_delta >= 456){
@@ -108,13 +114,13 @@ void GBPpu::UpdateTimer(uint8_t cycles){
     }
 }
 
-void GBPpu::ChangeModes(PpuMode mode){ 
+void GBPpu::changeModes(PpuMode mode){ 
     waiting = false;
     this->mode = mode;
     ppu_timer = 0;
     gbBus->write((gbBus->read(STAT_ADDR) & 0b11111100) | static_cast<uint8_t>(mode), STAT_ADDR);
     //logic for dispatching interrupts
-    if (CheckCondition(mode)){ // check condition for current mode change
+    if (checkCondition(mode)){ // check condition for current mode change
         if (!stat_blocking){
             stat_blocking = true;
             gbBus->write((gbBus->read(IF_ADDR) | 0b00000010), IF_ADDR); //request lcd_stat interrupt
@@ -124,7 +130,7 @@ void GBPpu::ChangeModes(PpuMode mode){
     }
 }
 
-bool GBPpu::CheckCondition(PpuMode mode){
+bool GBPpu::checkCondition(PpuMode mode){
     switch (mode)
     {
     case PpuMode::HBLANK: //mode 0
@@ -133,7 +139,7 @@ bool GBPpu::CheckCondition(PpuMode mode){
     case PpuMode::VBLANK: //mode 1
         return gbBus->read(STAT_ADDR) & 0b00010000;
         break;
-    case PpuMode::OAM_SCAN: //mode 2
+    case PpuMode::obj_attribute_mem_SCAN: //mode 2
         return gbBus->read(STAT_ADDR) & 0b00100000;
         break;
     
@@ -143,11 +149,34 @@ bool GBPpu::CheckCondition(PpuMode mode){
     }
 }
 
-Sprite GBPpu::LoadSprite(uint16_t addr){
+Sprite GBPpu::loadSprite(uint16_t addr){
     return {
         gbBus->read(addr), //y_pos
         gbBus->read(addr + 1), //x_pos
         gbBus->read(addr + 2), //tile_index
         gbBus->read(addr + 3), //flags
     };
+}
+
+//TODO: be able to change the values of SCX, SCY, WY, WX mid scanline 
+inline void GBPpu::drawingMode(){
+    /*
+        Pushes one row of pixels (160 pixels) to the display_buffer
+
+        Fetch tile:
+            get tile number of current tile
+            depends on if rendering background or window and LCDC. 3 & 5
+        Fetch tile data high:
+        Fetch tile data low:
+        Push to FIFO:
+            decode fetched tile data into pixels and push to pixel queue
+        Push to LCD:
+            using algorithm clear the FIFOs into to LCD
+
+        Repeat until line is finished (160 pixels pushed to LCD)
+        
+    */
+   uint8_t x_position_counter = 0;
+
+    //how do sprite and background fetch interact with eachother
 }

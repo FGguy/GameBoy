@@ -41,12 +41,12 @@ struct Instruction {
 
 class GBCpu {
     private:
-        std::uint16_t pc_r; //program counter
-        std::uint16_t sp_r; //stack counter
+        uint16_t pc_r; //program counter
+        uint16_t sp_r; //stack counter
 
-        std::uint8_t ir_r; //instruction register
-        std::uint8_t ime_r; //interrupt enable register
-        std::vector<std::uint8_t> g_registers; //a, f, b, c, d, e, h, l
+        uint8_t ir_r; //instruction register
+        uint8_t ime_r; //interrupt enable register
+        std::vector<uint8_t> g_registers; //a, f, b, c, d, e, h, l
 
         bool g_halted;
         bool g_stopped;
@@ -55,26 +55,26 @@ class GBCpu {
         Instruction instruction_table[256];
         Instruction cb_instruction_table[256];
 
-        std::uint16_t jump_vectors[5] = {0x0040, 0x0048, 0x0050, 0x0058, 0x0060};
+        uint16_t jump_vectors[5] = {0x0040, 0x0048, 0x0050, 0x0058, 0x0060};
 
         GBBus* gbBus;
 
     public:
         GBCpu(GBBus* gbBus);
         void initInstructionTables();
-        std::uint8_t decodeExecuteInstruction();
-        std::uint8_t handleInterrupts();
+        uint8_t decodeExecuteInstruction();
+        uint8_t handleInterrupts();
         void requestInterrupt(InterruptSource interrupt);
 
         //util
-        std::uint16_t getRegisterPair(RegisterPairs register_pair);
-        void setRegisterPair(std::uint16_t value, RegisterPairs register_pair);
-        void addToRegister(Registers reg, std::uint8_t value);
-        void subFromRegister(Registers reg, std::uint8_t value);
-        std::uint8_t readR8(std::uint8_t r8);
-        void writeR8(std::uint8_t value, std::uint8_t r8);
+        uint16_t getRegisterPair(RegisterPairs register_pair);
+        void setRegisterPair(uint16_t value, RegisterPairs register_pair);
+        void addToRegister(Registers reg, uint8_t value);
+        void subFromRegister(Registers reg, uint8_t value);
+        uint8_t readR8(uint8_t r8);
+        void writeR8(uint8_t value, uint8_t r8);
 
         //setters & getters
-        std::uint8_t getRegister(Registers reg);
-        void setRegister(std::uint8_t value, Registers reg);
+        uint8_t getRegister(Registers reg);
+        void setRegister(uint8_t value, Registers reg);
 };

@@ -17,13 +17,13 @@ enum Status {
     ERR_OVERFLOW
 };
 
-Status LoadFileToBuffer(const std::string& filePath, std::vector<std::uint8_t>& buffer) {
+Status LoadFileToBuffer(const std::string& filePath, std::vector<uint8_t>& buffer) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
         return Status::ERR_OPEN;
     }
 
-    std::uint8_t byte;
+    uint8_t byte;
     size_t r_index{0};
 
     while (file.read(reinterpret_cast<char*>(&byte), 1)) {
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     //initialize ram and load program
     int kb{ 1024 };
     int cart_rom_size{ 32*kb }; //TODO: Read cartridge rom header and allocate appropriate amount of memory for ROM
-    std::vector<std::uint8_t> cart_rom(cart_rom_size,0);
+    std::vector<uint8_t> cart_rom(cart_rom_size,0);
 
     switch (LoadFileToBuffer(cartridge_filepath, cart_rom))
     {
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     }
 
     //Load Boot rom
-    std::vector<std::uint8_t> boot_rom(256,0);
+    std::vector<uint8_t> boot_rom(256,0);
     switch (LoadFileToBuffer("C:/Users/Yan/Desktop/gameboy/dmg_boot.bin", boot_rom)) //TODO: Change to use a relative path
     {
     case ERR_OPEN: {

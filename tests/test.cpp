@@ -4,8 +4,8 @@
 
 TEST_CASE("Behavior of the bus", "[bus]"){
     //Roms are initialized with 0, and 1 to identify which rom is being read from.
-    std::vector<std::uint8_t> cart_rom(32 * 1024 , 0);
-    std::vector<std::uint8_t> boot_rom(256 , 1);
+    std::vector<uint8_t> cart_rom(32 * 1024 , 0);
+    std::vector<uint8_t> boot_rom(256 , 1);
     GBBus bus{boot_rom, cart_rom};
 
     SECTION("Boot ROM is mapped and unmapped"){
@@ -43,8 +43,8 @@ TEST_CASE("Behavior of the bus", "[bus]"){
 
 TEST_CASE("Behavior of the CPU", "[cpu]"){
 
-    std::vector<std::uint8_t> cart_rom(32 * 1024 , 0);
-    std::vector<std::uint8_t> boot_rom(256 , 1);
+    std::vector<uint8_t> cart_rom(32 * 1024 , 0);
+    std::vector<uint8_t> boot_rom(256 , 1);
     GBBus bus{boot_rom, cart_rom};
     GBCpu cpu{&bus};
     cpu.initInstructionTables();
@@ -78,7 +78,7 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
                 //Addition
                 cpu.setRegister(0x00, REG_H); //required, register are unitialized by default
                 cpu.addToRegister(REG_H, 0x09);
-                std::uint8_t flag = cpu.getRegister(REG_F);
+                uint8_t flag = cpu.getRegister(REG_F);
                 REQUIRE((flag & 0x10) == 0); //Carry
                 REQUIRE((flag & 0x20) == 0); //Half-Carry
                 REQUIRE((flag & 0x40) == 0); //Subtraction
@@ -140,7 +140,7 @@ TEST_CASE("Behavior of the CPU", "[cpu]"){
         bus.write(0x34, 0x0003);
 
         //NOP
-        std::uint8_t cycles = cpu.decodeExecuteInstruction();
+        uint8_t cycles = cpu.decodeExecuteInstruction();
         REQUIRE(cycles == 1);
 
         //ld r16, imm16
