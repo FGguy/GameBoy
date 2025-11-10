@@ -5,82 +5,56 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <thread>
-#include <chrono>
+#include <filesystem>
 
 /*
     Util function that loads a file into a unsigned int8 vector
 */
-enum Status {
-    OK,
-    ERR_OPEN,
-    ERR_OVERFLOW
-};
-
-Status LoadFileToBuffer(const std::string& filePath, std::vector<uint8_t>& buffer) {
+void LoadFileToBuffer(const std::string& filePath, std::vector<uint8_t>& buffer) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
-        return Status::ERR_OPEN;
+        throw std::runtime_error("Failed to open file: " + filePath);
     }
 
     uint8_t byte;
-    size_t r_index{0};
+    size_t rIndex{0};
 
     while (file.read(reinterpret_cast<char*>(&byte), 1)) {
-        if (r_index >= buffer.size()) {
-            return Status::ERR_OVERFLOW;
+        if (rIndex >= buffer.size()) {
+            throw std::runtime_error("File size exceeds buffer size");
         }
-        buffer[r_index++] = byte;
+        buffer[rIndex++] = byte;
     }
-
-    return Status::OK;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        std::cout << "No file path provided";
-        return 1;
-    }
-    const std::string cartridge_filepath = argv[1];
-
-    //initialize ram and load program
-    int kb{ 1024 };
-    int cart_rom_size{ 32*kb }; //TODO: Read cartridge rom header and allocate appropriate amount of memory for ROM
-    std::vector<uint8_t> cart_rom(cart_rom_size,0);
-
-    switch (LoadFileToBuffer(cartridge_filepath, cart_rom))
+    try
     {
-    case ERR_OPEN: {
-        std::cerr << "Error: Failed to open the cartridge rom file." << cartridge_filepath << std::endl;
-        return 1;
-        } break;
-    case ERR_OVERFLOW: {
-        std::cerr << "Error: cartridge rom file is too big for memory." << std::endl;
-        return 1;
-        } break;
-    default:
-        break;
-    }
+        if (argc < 2) {
+            std::cout << "No file path provided";
+            return 1;
+        }
+        const std::string cartridgeFilepath = argv[1];
 
-    //Load Boot rom
-    std::vector<uint8_t> boot_rom(256,0);
-    switch (LoadFileToBuffer("C:/Users/Yan/Desktop/gameboy/dmg_boot.bin", boot_rom)) //TODO: Change to use a relative path
+        //initialize ram and load program
+        constexpr const int cartRomSize{ 0x8000 }; //TODO: Read cartridge rom header and allocate appropriate amount of memory for ROM
+        std::vector<uint8_t> cartRom(cartRomSize, 0);
+        LoadFileToBuffer(cartridgeFilepath, cartRom);
+
+        //Load Boot rom
+        std::filesystem::path bootPath = std::filesystem::current_path() / "dmgb_boot.bin";
+        std::vector<uint8_t> bootRom(0x100, 0);
+        LoadFileToBuffer(bootPath.string(), bootRom);
+            
+        //run program
+        GBPlatform platform{bootRom, cartRom};
+        return platform.bootAndExecute();
+    }
+    catch(const std::exception& e)
     {
-    case ERR_OPEN: {
-        std::cerr << "Error: Could not load the boot rom, make sure it is in the same directory as the executable." << std::endl;
+        std::cerr << e.what() << '\n';
         return 1;
-        } break;
-    case ERR_OVERFLOW: {
-        std::cerr << "Error: boot rom file is too big for memory." << std::endl;
-        return 1;
-        } break;
-    default:
-        break;
     }
-
-    //run program
-    GBPlatform platform{boot_rom, cart_rom};
-    return platform.BootAndExecute();
 }
 
