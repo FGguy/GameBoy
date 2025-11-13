@@ -39,7 +39,7 @@ GBPpu::GBPpu(GBBus* gbBus):
 {
 }
 
-void GBPpu::updateTimer(uint8_t cycles){
+void GBPpu::updateTimer(uint16_t cycles){
     if(gbBus->read(LCDC_ADDR) & 0b10000000){ //PPU is disabled
         waiting = false;
         ppu_timer = 0;
@@ -71,7 +71,7 @@ void GBPpu::updateTimer(uint8_t cycles){
             if(!waiting){
                 drawingMode();
                 waiting = true;
-            } else if(ppu_timer >= 172 + drawing_penalty){
+            } else if(ppu_timer >= 172U + drawing_penalty){
                 changeModes(PpuMode::HBLANK);
             }
             break;
@@ -79,7 +79,7 @@ void GBPpu::updateTimer(uint8_t cycles){
             if(!waiting){
                 //wait
                 waiting = true;
-            } else if(ppu_timer >= 204 - drawing_penalty){
+            } else if(ppu_timer >= 204U - drawing_penalty){
                 uint8_t ly = gbBus->read(LY_ADDR);
                 if(ly < 144){
                     changeModes(PpuMode::obj_attribute_mem_SCAN);

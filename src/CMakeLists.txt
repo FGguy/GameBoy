@@ -1,6 +1,6 @@
 find_package(SDL2 CONFIG REQUIRED)
 
-add_library(hardware GBPlatform.cpp GBBus.cpp GBCpu.cpp GBPpu.cpp) # add new files here
+add_library(hardware GBEmulator.cpp GBBus.cpp GBCpu.cpp GBPpu.cpp SDLGameBoyPlatformLayer.cpp) # add new files here
 target_include_directories(hardware PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(hardware

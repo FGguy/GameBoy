@@ -90,23 +90,23 @@ void GBCpu::writeR8(uint8_t value, uint8_t r8){
 }
 
 void GBCpu::addToRegister(Registers reg, uint8_t value){
-        if ((0xFF - g_registers[reg]) < value) { // C: Carry, overflow?
-            g_registers[REG_F] |= 0b00010000; 
-        } else { 
-            g_registers[REG_F] &= 0b11101111; 
-        } 
-        if (((g_registers[reg] & 0x0F) + (value & 0x0F)) > 0x0F) { //H: Half-Carry
-            g_registers[REG_F] |= 0b00100000; 
-        } else { 
-            g_registers[REG_F] &= 0b11011111; 
-        } 
-        g_registers[reg] += value;
-        if (g_registers[reg] == 0){ //Z: zero, result is zero?
-            g_registers[REG_F] |= 0b10000000; 
-        } else { 
-            g_registers[REG_F] &= 0b01111111; 
-        } 
-        g_registers[REG_F] &= 0b10111111; //N, substraction flag
+    if ((0xFF - g_registers[reg]) < value) { // C: Carry, overflow?
+        g_registers[REG_F] |= 0b00010000; 
+    } else { 
+        g_registers[REG_F] &= 0b11101111; 
+    } 
+    if (((g_registers[reg] & 0x0F) + (value & 0x0F)) > 0x0F) { //H: Half-Carry
+        g_registers[REG_F] |= 0b00100000; 
+    } else { 
+        g_registers[REG_F] &= 0b11011111; 
+    } 
+    g_registers[reg] += value;
+    if (g_registers[reg] == 0){ //Z: zero, result is zero?
+        g_registers[REG_F] |= 0b10000000; 
+    } else { 
+        g_registers[REG_F] &= 0b01111111; 
+    } 
+    g_registers[REG_F] &= 0b10111111; //N, substraction flag
 }
 
 void GBCpu::subFromRegister(Registers reg, uint8_t value){

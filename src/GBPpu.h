@@ -95,7 +95,7 @@ class GBPpu {
         //matrix for pixels
         GBPpu(GBBus* gbBus);
         std::vector<uint8_t> fetchTile(uint8_t tile_index, bool isSprite);
-        void updateTimer(uint8_t cycles);
+        void updateTimer(uint16_t cycles);
         void changeModes(PpuMode mode);
         bool checkCondition(PpuMode mode);
         void drawingMode();
