@@ -1,4 +1,4 @@
-#include <GBPlatform.h>
+#include <GBEmulator.h>
 
 #include <iostream>
 #include <fstream>
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
         LoadFileToBuffer(bootPath.string(), bootRom);
             
         //run program
-        GBPlatform platform{bootRom, cartRom};
-        return platform.bootAndExecute();
+        GBEmulator emulator{bootRom, cartRom};
+        return emulator.bootAndExecute();
     }
     catch(const std::exception& e)
     {

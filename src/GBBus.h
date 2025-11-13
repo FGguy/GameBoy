@@ -56,7 +56,7 @@ class GBBus{
         */
         vector<uint8_t> cartridgeROM; 
         vector<uint8_t> bootROM;
-        vector<uint8_t> memory;
+        vector<uint8_t> memoryBuffer;
 
     public:
         GBBus(vector<uint8_t>& bootROM, vector<uint8_t>& cartridgeROM);
