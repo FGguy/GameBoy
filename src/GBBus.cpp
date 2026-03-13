@@ -1,4 +1,4 @@
-#include <GBBus.h>
+#include "GBBus.h"
 
 GBBus::GBBus(std::vector<uint8_t>& bootROM, std::vector<uint8_t>& cartridgeROM):
     bootROM{bootROM},

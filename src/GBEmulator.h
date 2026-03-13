@@ -1,8 +1,8 @@
 #pragma once
-#include <GBBus.h>
-#include <GBCpu.h>
-#include <GBPpu.h>
-#include <IGameBoyPlatformLayer.h>
+#include "GBBus.h"
+#include "GBCpu.h"
+#include "GBPpu.h"
+#include "IGameBoyPlatformLayer.h"
 
 #include <vector>
 using std::vector;

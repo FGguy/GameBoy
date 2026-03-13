@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "GBPpu.h"
 
 struct InputState {
     uint8_t b_up;
@@ -18,5 +19,5 @@ class IGameBoyPlatformLayer {
     public:
         virtual ~IGameBoyPlatformLayer() = default;
         virtual void processInputs(InputState& state) = 0;
-        virtual void renderFrame() = 0; // take display buffer as parameter
+        virtual void renderFrame(std::vector<Pixel> display_buffer) = 0; // take display buffer as parameter
 };

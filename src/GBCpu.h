@@ -1,5 +1,5 @@
 #pragma once
-#include <GBBus.h>
+#include "GBBus.h"
 
 #include <vector>
 #include <functional>

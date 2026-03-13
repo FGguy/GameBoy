@@ -1,5 +1,5 @@
-#include <GBCpu.h>
-#include <InstructionMacros.h>
+#include "GBCpu.h"
+#include "InstructionMacros.h"
 
 GBCpu::GBCpu(GBBus* gbBus):
     gbBus{gbBus},

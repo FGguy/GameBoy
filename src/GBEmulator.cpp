@@ -1,5 +1,5 @@
-#include <GBEmulator.h>
-#include <SDLGameBoyPlatformLayer.h>
+#include "GBEmulator.h"
+#include "SDLGameBoyPlatformLayer.h"
 
 GBEmulator::GBEmulator(vector<uint8_t>& bootROM, vector<uint8_t>& cartridgeROM):
     bootROM{bootROM},
@@ -46,7 +46,7 @@ inline void GBEmulator::updateTimers(uint16_t cycles){
     if (vblankTimer >= 17564){
         gbCpu.requestInterrupt(VBlank);
         vblankTimer = 0;
-        platformLayer->renderFrame();
+        platformLayer->renderFrame(gbPpu.getDisplayBuffer());
     }
     lcdTimer += cycles;
     

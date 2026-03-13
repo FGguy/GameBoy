@@ -1,5 +1,5 @@
 #pragma once
-#include <GBBus.h>
+#include "GBBus.h"
 
 #include <vector>
 #include <queue>
@@ -64,7 +64,7 @@ struct Sprite {
     uint8_t tile_index;
     uint8_t flags;
 
-    uint8_t CheckFlag(SpriteFlags s_flag){
+    uint8_t CheckFlag(SpriteFlags s_flag) const {
         // 1 is set 0 is unset
         return ((flags >> 4) >> s_flag) & 0x01;
     }
@@ -100,4 +100,5 @@ class GBPpu {
         bool checkCondition(PpuMode mode);
         void drawingMode();
         Sprite loadSprite(uint16_t addr);
+        std::vector<Pixel> getDisplayBuffer(){ return display_buffer; }
 };
